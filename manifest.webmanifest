@@ -1,0 +1,14 @@
+{
+  "name": "Mosaïque",
+  "short_name": "Mosaïque",
+  "description": "Espace personnel modulaire : voyages, congés et plus",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}
