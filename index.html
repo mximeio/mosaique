@@ -1098,7 +1098,7 @@
 <div id="datepop" class="datepop" hidden></div>
 <div id="modal" class="modal-ov" hidden>
   <div class="modal">
-    <div class="modal-head"><h3 id="modal-title"></h3><div style="display:flex;align-items:center;gap:10px"><button class="modal-x" id="modal-link" title="Copier le lien des notes" hidden><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></button><button class="modal-x" id="modal-close" title="Fermer">×</button></div></div>
+    <div class="modal-head"><h3 id="modal-title"></h3><button class="modal-x" id="modal-close" title="Fermer">×</button></div>
     <div id="modal-body" class="modal-body"></div>
     <div class="modal-foot">
       <button id="modal-delete" class="btn danger sm" style="display:none">Supprimer</button>
@@ -1418,7 +1418,6 @@
     openModal("Notes du voyage",body,false);
     var md=document.querySelector(".modal");if(md)md.classList.add("modal--notes");
     var ft=document.querySelector(".modal-foot");if(ft)ft.style.display="none";
-    var ml=document.getElementById("modal-link");if(ml)ml.hidden=false;
     if(hasQuill()){
       notesQuill=new Quill("#note-editor",{theme:"snow",bounds:document.getElementById("modal"),placeholder:"Planning, réservations (réfs, liens, adresses), idées, numéros utiles…",modules:{toolbar:QTOOL}});
       notesLoading=true;notesQuill.root.innerHTML=html;notesLoading=false;
@@ -1522,7 +1521,6 @@
     document.getElementById("modal-delete").style.display=showDelete?"":"none";
     var md=document.querySelector(".modal");if(md){md.classList.remove("modal--notes");md.classList.remove("modal--sm");}
     var ft=document.querySelector(".modal-foot");if(ft)ft.style.display="";
-    var ml=document.getElementById("modal-link");if(ml)ml.hidden=true;
     document.getElementById("modal").hidden=false;
   }
   function closeModal(){var wasNotes=notesOpen();document.getElementById("modal").hidden=true;modalCtx=null;notesQuill=null;if(wasNotes)syncHash();}
@@ -1781,7 +1779,6 @@
   var modalDownOnBg=false;
   modalEl.addEventListener("mousedown",function(e){modalDownOnBg=(e.target===modalEl);});
   modalEl.addEventListener("click",function(e){
-    if(e.target.closest("#modal-link")){if(state)copyLink(tripURL(state,true));return;}
     if((e.target===modalEl&&modalDownOnBg)||e.target.closest("#modal-close")||e.target.closest("#modal-cancel")){closeModal();return;}
     if(e.target===modalEl)return;
     if(e.target.closest("#acc-save")){accSavePassword();return;}
