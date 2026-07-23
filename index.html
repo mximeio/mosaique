@@ -943,18 +943,15 @@
     .matrix td.mx-cell{padding:5px}
   }
   /* ===== Portrait : on masque les infos secondaires (réaffichées en paysage) ===== */
-  @media(max-width:640px) and (orientation:portrait){
-    .exp-part,.exp-head .eh-part{display:none}
-    .exp-rep,.exp-head .eh-rep{display:none}
-    .drag-handle,.exp-head .eh-drag{display:none}
-    .mx-grip{display:none}
-    .hero-names{display:none}
-    .mx-cmeta{display:none}
-    .mx-bandtxt{display:none}
-    /* Ligne 1 : onglets (app) + bouton compte ; ligne 2 : sélecteur + Notes + actions du module */
-    .topbar .mod-nav,.cg-topbar .mod-nav{order:1;margin-right:auto}
-    .topbar .acct-btn,.cg-topbar .acct-btn{order:2}
+  /* Réorganisation de la barre haute : pilotée par la LARGEUR seule (pas l'orientation),
+     pour que dès que la barre s'enroule sur deux lignes — fenêtre desktop étroite comprise —
+     on bascule directement sur l'agencement mobile propre (ligne 1 : onglets + compte ;
+     ligne 2 : sélecteur + Notes + actions). 760px couvre le point d'enroulement (~710px). */
+  @media(max-width:760px){
+    .topbar .mod-nav,.cg-topbar .mod-nav,.sk-topbar .mod-nav{order:1;margin-right:auto}
+    .topbar .acct-btn,.cg-topbar .acct-btn,.sk-topbar .acct-btn{order:2}
     .tb-spacer{order:3;flex:0 0 100%;height:0;margin:0}
+    .sk-topbar .sk-persel{order:4;margin-right:auto}
     .topbar .tb-group{order:4;flex:1 1 100%;min-width:0}
     .topbar .trip-switch{margin-right:auto}
     .cg-topbar .cg-ro{order:4}
@@ -965,6 +962,17 @@
     .cg-topbar #cg-open-set{order:7}
     #cg-year-pop{left:0;right:auto}
   }
+  /* Compaction de densité (dépenses + matrice personnes/périodes) pilotée par la LARGEUR seule :
+     une fenêtre desktop étroite se compacte comme un téléphone, quelle que soit son orientation. */
+  @media(max-width:640px){
+    .exp-part,.exp-head .eh-part{display:none}
+    .exp-rep,.exp-head .eh-rep{display:none}
+    .drag-handle,.exp-head .eh-drag{display:none}
+    .mx-grip{display:none}
+    .hero-names{display:none}
+    .mx-cmeta{display:none}
+    .mx-bandtxt{display:none}
+  }
   /* ===== Smartphone en paysage : largeur max + commentaires discrets ===== */
   @media(orientation:landscape) and (max-height:600px){
     .container{padding:14px 14px 40px}
@@ -973,6 +981,70 @@
     .exp-comment{font-size:11px}
     .exp-comment-body h1,.exp-comment-body h2,.exp-comment-body h3{font-size:11px}
   }
+  /* ===== Module Skincare ===== */
+  .sk-topbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .sk-persel{display:inline-flex;gap:6px}
+  .sk-pchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);padding:7px 12px;font-size:13px;font-weight:600;color:var(--color-text);cursor:pointer;line-height:1}
+  .sk-pchip .sk-av{width:18px;height:18px;border-radius:50%;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .sk-pchip.on{border-color:var(--color-primary);box-shadow:0 0 0 1px var(--color-primary);background:#f4f2fe}
+  .sk-pchip .sk-lock{color:var(--color-text-soft);display:inline-flex;align-items:center;margin-left:0}
+  #sk-title .sk-lock{color:var(--color-text-mute);display:inline-flex;align-items:center;vertical-align:-2px;margin-left:1px}
+  #sk-title .sk-lock svg{width:16px;height:16px;stroke-width:2.3}
+  /* Pleine largeur du conteneur, comme Voyages et Congés (desktop + smartphone paysage) */
+  .sk-momentbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .sk-momseg{display:inline-flex;align-items:center;height:38px;box-sizing:border-box;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:10px;padding:3px;gap:2px}
+  .sk-momseg button{border:none;background:transparent;font:inherit;font-size:13px;line-height:1;font-weight:600;color:var(--color-text-mute);border-radius:7px;padding:6px 14px;cursor:pointer}
+  .sk-momseg button.on{color:#fff;background:var(--color-primary)}
+  .sk-ret{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--color-text-light)}
+  .sk-sw{width:40px;height:24px;border-radius:99px;background:#e2e4ea;border:none;cursor:pointer;position:relative;transition:background .15s;flex:none}
+  .sk-sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+  .sk-sw.on{background:var(--color-primary)}
+  .sk-sw.on::after{left:19px}
+  .sk-add{margin-left:auto}
+  table.sk-tab{width:100%;border-collapse:collapse;font-size:13px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;overflow:hidden}
+  table.sk-tab th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-mute);padding:10px 6px;border-bottom:1px solid var(--color-border);text-align:center;background:var(--color-surface-alt);white-space:nowrap}
+  table.sk-tab th.sk-lh{text-align:left;padding-left:14px}
+  table.sk-tab th.sk-now{color:var(--color-primary)}
+  table.sk-tab td{padding:9px 6px;border-bottom:1px solid var(--color-border-light);text-align:center}
+  table.sk-tab tr:last-child td{border-bottom:none}
+  table.sk-tab td.sk-name{text-align:left;padding-left:14px;font-weight:600;color:var(--color-text)}
+  table.sk-tab td.sk-name small{display:block;font-size:11px;font-weight:400;color:var(--color-text-mute);padding-left:19px}
+  table.sk-tab td.sk-now{background:#f4f2fe}
+  table.sk-tab .sk-drag{color:var(--color-text-soft);margin-right:7px;cursor:grab;font-size:12px;user-select:none;touch-action:none}
+  table.sk-tab .sk-y{display:inline-block;width:18px;height:18px;border-radius:50%;background:#e7f6ee;color:#0f8a4f;font-size:11px;font-weight:700;line-height:18px}
+  table.sk-tab .sk-x{color:#d8d5cf;font-size:13px}
+  table.sk-tab td.sk-cell{cursor:pointer}
+  table.sk-tab td.sk-cell.sk-ro{cursor:default}
+  table.sk-tab td.sk-cell:not(.sk-ro):hover{background:var(--color-surface-alt)}
+  .sk-pen{border:none;background:transparent;color:var(--color-text-soft);cursor:pointer;padding:2px;display:inline-flex;align-items:center;vertical-align:middle;line-height:1}
+  .sk-pen svg{display:block}
+  .sk-pen:hover{color:var(--color-primary)}
+  .sk-drop-before{box-shadow:inset 0 2px 0 0 var(--color-primary)}
+  .sk-drop-after{box-shadow:inset 0 -2px 0 0 var(--color-primary)}
+  .sk-list{display:none;background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;padding:6px 16px}
+  @media(max-width:640px){#module-skincare .sk-tab-wrap{display:none}#module-skincare .sk-list{display:block}}
+  .sk-step{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border-light)}
+  .sk-step:last-child{border-bottom:none}
+  .sk-step .sk-n{width:22px;height:22px;border-radius:50%;background:var(--color-surface-alt);border:1px solid var(--color-border);font-size:11px;font-weight:700;color:var(--color-text-mute);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .sk-step .sk-tx{flex:1;min-width:0}
+  .sk-step .sk-tx b{font-size:14px;display:block}
+  .sk-step .sk-tx small{font-size:11px;color:var(--color-text-mute);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sk-step .sk-rtag{font-size:10px;font-weight:700;letter-spacing:.04em;background:#fdf2f2;color:#c0392b;border:1px solid #f3c9c9;border-radius:999px;padding:1px 7px;flex:none}
+  .sk-empty{font-size:13px;color:var(--color-text-mute);padding:16px 4px;text-align:center}
+  /* Fiche produit (modale) */
+  .skm-lab{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-mute);margin-bottom:6px}
+  .skm-fld{width:100%;height:40px;border:1px solid var(--color-border);border-radius:10px;padding:0 12px;font:inherit;font-size:14px;font-weight:600}
+  .skm-ctx{display:flex;gap:8px}
+  .skm-ctx button{flex:1;text-align:center;border:1px solid var(--color-border);border-radius:10px;padding:8px 0;font:inherit;font-size:13px;color:var(--color-text-mute);cursor:pointer;background:var(--color-surface)}
+  .skm-ctx button.on{border-color:var(--color-primary);background:#f4f2fe;color:var(--color-primary);font-weight:600}
+  .skm-ref{display:flex;align-items:center;gap:8px;padding:7px 0}
+  .skm-ref .skm-sel{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--color-border);flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer}
+  .skm-ref.cur .skm-sel{background:#0f8a4f;border-color:#0f8a4f}
+  .skm-ref input{flex:1;min-width:0;border:none;border-bottom:1px dashed transparent;background:transparent;font:inherit;font-size:13px;color:var(--color-text);outline:none;padding:2px 0}
+  .skm-ref input:hover{border-bottom-color:var(--color-border)}
+  .skm-ref input:focus{border-bottom-color:var(--color-primary)}
+  .skm-ref .skm-del{border:none;background:transparent;color:var(--color-text-soft);cursor:pointer;font-size:15px;flex:none}
+  .skm-addref{font-size:13px;font-weight:600;color:var(--color-primary);cursor:pointer;background:none;border:none;padding:6px 0}
 </style>
 </head>
 <body>
@@ -982,6 +1054,7 @@
     <nav class="mod-nav">
       <button type="button" class="mod-tab active" data-mod="voyages">Voyages</button>
       <button type="button" class="mod-tab" data-mod="conges">Congés</button>
+      <button type="button" class="mod-tab" data-mod="skincare">Skincare</button>
     </nav>
     <div class="tb-spacer"></div>
     <div class="tb-group">
@@ -1055,6 +1128,7 @@
       <nav class="mod-nav">
         <button type="button" class="mod-tab" data-mod="voyages">Voyages</button>
         <button type="button" class="mod-tab active" data-mod="conges">Congés</button>
+        <button type="button" class="mod-tab" data-mod="skincare">Skincare</button>
       </nav>
       <div class="tb-spacer"></div>
       <span class="cg-ro" id="cg-ro" hidden>Lecture seule</span>
@@ -1080,6 +1154,21 @@
     <h2 class="section-title" style="margin-top:26px">Soldes</h2>
     <div class="panel cg-solpanel"><div class="panel-body" id="cg-sol"></div></div>
     <div id="cg-tip" class="cg-tip" hidden></div>
+  </div>
+
+  <div id="module-skincare" hidden>
+    <div class="sk-topbar">
+      <nav class="mod-nav">
+        <button type="button" class="mod-tab" data-mod="voyages">Voyages</button>
+        <button type="button" class="mod-tab" data-mod="conges">Congés</button>
+        <button type="button" class="mod-tab active" data-mod="skincare">Skincare</button>
+      </nav>
+      <div class="tb-spacer"></div>
+      <div class="sk-persel" id="sk-persel"></div>
+      <button type="button" class="acct-btn" id="sk-acct-btn" title="Compte et paramètres" aria-label="Compte et paramètres" hidden>M</button>
+    </div>
+    <h2 class="section-title" id="sk-title">Skincare</h2>
+    <div class="panel sk-panel"><div class="panel-body" id="sk-body"></div></div>
   </div>
 
 </div>
@@ -1219,9 +1308,10 @@
   function notesOpen(){return !!(modalCtx&&modalCtx.type==="notes");}
   function latestTripId(){var ts=store.trips.filter(canSee);if(!ts.length)ts=store.trips;var best=null,bs="";ts.forEach(function(t){var s=tripStart(t)||"";if(best===null||s>bs){bs=s;best=t;}});return best?best.id:((store.trips[0]||{}).id);}
   function tripURL(t){return location.origin+location.pathname+"#voyages-"+tripSlug(t);}
-  function syncHash(){if(routeLock)return;var h;if(curModule==="conges")h="#conges";else{if(!state)return;h="#voyages-"+tripSlug(state);}if(location.hash!==h){routeLock=true;location.hash=h;setTimeout(function(){routeLock=false;},0);}}
+  function syncHash(){if(routeLock)return;var h;if(curModule==="conges")h="#conges";else if(curModule==="skincare")h="#skincare";else{if(!state)return;h="#voyages-"+tripSlug(state);}if(location.hash!==h){routeLock=true;location.hash=h;setTimeout(function(){routeLock=false;},0);}}
   function applyHash(){if(!store||!store.trips)return;var raw=decodeURIComponent((location.hash||"").replace(/^#/,"")),low=raw.toLowerCase();
     if(low.indexOf("cong")===0){if(moduleAccess.conges)setModule("conges");return;}
+    if(low.indexOf("skin")===0){if(moduleAccess.skincare)setModule("skincare");return;}
     if(low.indexOf("voyage")===0){setModule("voyages");var slug=raw.replace(/^voyages?-?/i,""),id=null;if(slug){var t=tripBySlug(slug);if(t)id=t.id;}if(!id)id=latestTripId();if(id&&id!==store.activeId){store.activeId=id;state=activeTrip();renderTripSwitch();renderAll();}return;}
   }
   function bootRoute(){if(routedOnce)return;routedOnce=true;window.addEventListener("hashchange",function(){if(routeLock)return;applyHash();});if((location.hash||"").replace(/^#\/?/,"").length)applyHash();else syncHash();}
@@ -1794,8 +1884,9 @@
       if(e.target.closest("#m-export")){doExport();return;}
       if(e.target.closest("#m-import")){closeModal();document.getElementById("file-input").click();return;}
     }
-    if(e.target.closest("#modal-save")){if(modalCtx&&modalCtx.type==="period")savePeriodModal();else if(modalCtx&&modalCtx.type==="person")savePersonModal();else if(modalCtx&&modalCtx.type==="expense")saveExpenseModal();else if(modalCtx&&modalCtx.type==="comment")saveCommentModal();else closeModal();return;}
+    if(e.target.closest("#modal-save")){if(modalCtx&&modalCtx.type==="period")savePeriodModal();else if(modalCtx&&modalCtx.type==="person")savePersonModal();else if(modalCtx&&modalCtx.type==="expense")saveExpenseModal();else if(modalCtx&&modalCtx.type==="comment")saveCommentModal();else if(modalCtx&&modalCtx.type==="skinprod")saveSkinProdModal();else closeModal();return;}
     if(e.target.closest("#modal-delete")){if(!modalCtx)return;
+      if(modalCtx.type==="skinprod"){if(skinDeleteProd())closeModal();return;}
       if(modalCtx.type==="expense"){var ed=expById(modalCtx.id),el=(ed&&ed.label||"").trim();if(!confirm("Supprimer la dépense"+(el?" « "+el+" »":"")+" ?"))return;state.expenses=state.expenses.filter(function(x){return x.id!==modalCtx.id;});save();renderExpenses();renderParts();closeModal();return;}
       var ok=modalCtx.type==="period"?removePeriod(modalCtx.id):removePerson(modalCtx.name);if(ok)closeModal();return;}
     var spk=e.target.closest("[data-scopepick]");
@@ -2022,8 +2113,8 @@
     if(area){area.focus();if(area.id==="note-text"){state.notes=area.innerHTML;save();}}
   });
   /* ===== 3. Shell multi-modules (onglets + droits par module) ===== */
-  var MODULES=["voyages","conges"];
-  var moduleAccess={voyages:true,conges:true},curModule="voyages";
+  var MODULES=["voyages","conges","skincare"];
+  var moduleAccess={voyages:true,conges:true,skincare:true},curModule="voyages";
   function allowedModules(){return MODULES.filter(function(m){return moduleAccess[m];});}
   function setModule(mod){
     if(!moduleAccess[mod])mod=allowedModules()[0]||"voyages";
@@ -2031,6 +2122,7 @@
     var tabs=document.querySelectorAll(".mod-tab");for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle("active",tabs[i].dataset.mod===mod);
     curModule=mod;
     if(mod==="conges")renderConges();
+    if(mod==="skincare")renderSkincare();
   }
   function applyModuleAccess(){
     var tabs=document.querySelectorAll(".mod-tab"),i;
@@ -2040,7 +2132,7 @@
   }
   function loadAccess(u){
     var uid=u&&u.uid;
-    moduleAccess={voyages:true,conges:true};congesReadOnly=false;
+    moduleAccess={voyages:true,conges:true,skincare:true};congesReadOnly=false;
     if(!(CLOUD&&db&&u)){applyModuleAccess();renderConges();return;}
     db.collection("config").doc("conges").get().then(function(snap){
       if(snap.exists){var d=snap.data()||{},w=d.write||[],r=d.read||[];
@@ -2607,15 +2699,186 @@
       try{ref.set({json:lastJson});}catch(e){}
       if(unsub)unsub();
       unsub=ref.onSnapshot(function(sn){if(sn.metadata.hasPendingWrites)return;var dd=sn.data();if(dd&&dd.json)onRemote(dd.json);});
-      loadConges(congesLegacy);
-    }).catch(function(){store=loadStore();var lg=store.conges;if(lg)delete store.conges;state=activeTrip();safeRender();hideBoot();bootRoute();loadConges(lg);});
+      loadConges(congesLegacy);loadSkincare();
+    }).catch(function(){store=loadStore();var lg=store.conges;if(lg)delete store.conges;state=activeTrip();safeRender();hideBoot();bootRoute();loadConges(lg);loadSkincare();});
   }
+  /* ===== 4ter. Module Skincare (routines de soins) ===== */
+  var SKIN_KEY="skincare-store-v1";
+  var skinData=null,skinActive=null,skinMoment=null,skinRetinol=false,skinUnsub=null,skinTimers={},skinReadOnly=false;
+  var skinCfg=null,skinCfgLoaded=false; /* config/skincare : mapping { routineId: uid } */
+  function skinEmail(){return (fbUser&&fbUser.email)?fbUser.email.trim().toLowerCase():"";}
+  function skinUid(){return (fbUser&&fbUser.uid)?fbUser.uid:"";}
+  function skinDefaultMoment(){var h=new Date().getHours();return (h>=5&&h<16)?"matin":"soir";}
+  function skinCtxIdx(){return skinMoment==="matin"?0:(skinRetinol?2:1);}
+  function skinRoutine(){if(!skinData||!skinData.routines)return null;var a=skinData.routines,i;for(i=0;i<a.length;i++)if(a[i].id===skinActive)return a[i];return a[0]||null;}
+  /* Appartenance pilotée par config/skincare (comme config/conges) : mapping id→uid,
+     éditable en console uniquement. Pas de config, ou routine non listée → ouvert. */
+  function skinEditable(r){if(!r)return false;if(!skinCfgLoaded)return true;if(!skinCfg)return true;var o=skinCfg[r.id];return !o||o===skinUid();}
+  function ensureSkin(){
+    if(!skinData||!skinData.routines)skinData={routines:[]};
+    skinData.routines.forEach(function(r){
+      if(!r.id)r.id=uid();if(!r.products)r.products=[];if(typeof r.seq!=="number")r.seq=r.products.length+2;
+      r.products.forEach(function(p){if(!p.id)p.id="s"+(r.seq++);if(!p.ctx||p.ctx.length!==3)p.ctx=[0,0,0];if(!p.refs)p.refs=[];
+        p.refs.forEach(function(rf){if(!rf.id)rf.id="r"+(r.seq++);});
+        if(p.refs.length&&!p.refs.some(function(rf){return rf.active;}))p.refs[0].active=true;});
+    });
+    if(skinMoment==null)skinMoment=skinDefaultMoment();
+    if(skinActive==null||!skinData.routines.some(function(r){return r.id===skinActive;})){
+      var mine=skinData.routines.filter(function(r){return skinCfg&&skinUid()&&skinCfg[r.id]===skinUid();})[0];
+      skinActive=(mine||skinData.routines[0]||{}).id||null;
+    }
+    return skinData;
+  }
+  function skinActiveRef(p){for(var i=0;i<p.refs.length;i++)if(p.refs[i].active)return p.refs[i];return null;}
+  function skinCache(){try{localStorage.setItem(SKIN_KEY,JSON.stringify(skinData));}catch(e){}}
+  function skinSort(){if(skinData&&skinData.routines)skinData.routines.sort(function(a,b){return (a.name||"").localeCompare(b.name||"");});}
+  function skinFromSnap(snap){var out={routines:[]};snap.forEach(function(doc){var d=doc.data()||{},r={};try{r=JSON.parse(d.json||"{}");}catch(e){r={};}r.id=doc.id;out.routines.push(r);});return out;}
+  function skinPayload(r){return {json:JSON.stringify({name:r.name,color:r.color,seq:r.seq,products:r.products})};}
+  function loadSkincareColl(){
+    var coll=db.collection("skincare");
+    coll.get().then(function(snap){
+      if(snap.empty){seedSkincare(coll);return;}
+      skinData=skinFromSnap(snap);skinSort();ensureSkin();skinCache();
+      if(curModule==="skincare")renderSkincare();
+      if(skinUnsub)skinUnsub();
+      skinUnsub=coll.onSnapshot(function(sn){if(sn.metadata.hasPendingWrites)return;skinData=skinFromSnap(sn);skinSort();ensureSkin();skinCache();if(curModule==="skincare"&&!isEditing())renderSkincare();});
+    }).catch(function(){try{var s=JSON.parse(localStorage.getItem(SKIN_KEY));if(s&&s.routines)skinData=s;}catch(e){}ensureSkin();if(curModule==="skincare")renderSkincare();});
+  }
+  function loadSkincare(){
+    if(!(CLOUD&&db&&fbUser)){try{var s=JSON.parse(localStorage.getItem(SKIN_KEY));if(s&&s.routines)skinData=s;}catch(e){}ensureSkin();if(curModule==="skincare")renderSkincare();return;}
+    /* Appartenance : config/skincare (mapping id→uid), édité en console comme config/conges. */
+    db.collection("config").doc("skincare").get().then(function(cs){skinCfg=(cs.exists?(cs.data()||null):null);skinCfgLoaded=true;loadSkincareColl();}).catch(function(){skinCfg=null;skinCfgLoaded=true;loadSkincareColl();});
+  }
+  function skinSave(r){
+    if(!r||!skinEditable(r))return;skinCache();
+    if(!(CLOUD&&fbUser&&db))return;
+    clearTimeout(skinTimers[r.id]);
+    skinTimers[r.id]=setTimeout(function(){try{db.collection("skincare").doc(r.id).set(skinPayload(r));}catch(e){}},700);
+  }
+  function seedSkincare(coll){
+    var ML=[
+      ["Huile démaquillante",[0,1,1],[]],
+      ["Nettoyant",[1,1,1],[]],
+      ["Lotion tonique",[1,1,1],["Hane Moa (Ginger 6) — Lotion Ginger 6 Booster Éclat & Anti-âge"]],
+      ["Rétinol / Rétinal",[0,0,1],[]],
+      ["Sérum Acide Hyaluronique",[1,1,1],["Aroma Zone — Sérum concentré d'Acide hyaluronique 3,5%"]],
+      ["Sérum Niacinamide",[1,1,0],["Aroma Zone — Sérum concentré Niacinamide 10%, Cuivre & Zinc"]],
+      ["Sérum Collagène",[1,0,1],["Aroma Zone — Sérum AA Collagène 1,5 %","The Ordinary — Multi-peptide + peptides de cuivre"]],
+      ["Contour des yeux",[1,1,1],["Nacomi — Sérum Contour des Yeux Caféine & Vitamine C","The Ordinary — Contour des yeux"]],
+      ["Crème hydratante (jour)",[1,1,0],["NovExpert — Fluide Pureté Zinc & Acide Azélaïque"]],
+      ["Crème hydratante (nuit)",[0,1,1],["Neutrogena — Collagen Bank Crème Hydratante"]],
+      ["Crème solaire",[1,0,0],[]]
+    ];
+    var MLJ=[
+      ["Huile démaquillante",[0,1,1],[]],
+      ["Nettoyant",[1,1,1],[]],
+      ["Lotion tonique/exfoliante",[1,1,1],["The Ordinary — Tonique Exfoliant à l'Acide Glycolique 7%","Aroma Zone — Lotion Tonique Niacinamide 5%, Zinc & Acide Hyaluronique"]],
+      ["Rétinol / Rétinal",[0,0,1],["The Ordinary — Rétinol 0.2% dans du Squalane","Aroma Zone — Sérum visage concentré Rétinal optimisé"]],
+      ["Sérum Vitamine C",[1,0,0],["The Ordinary — Sérum Éclat Multi-Antioxydant"]],
+      ["Sérum Acide Hyaluronique",[1,1,1],["Aroma Zone — Sérum concentré d'Acide hyaluronique 3,5%"]],
+      ["Sérum Niacinamide",[1,1,0],["Aroma Zone — Sérum concentré Niacinamide 10%, Cuivre & Zinc"]],
+      ["Sérum Collagène",[1,1,1],["Aroma Zone — Sérum AA Collagène 1,5 %"]],
+      ["Contour des yeux",[1,1,1],["The Ordinary — Sérum Multi-Peptides Yeux"]],
+      ["Crème hydratante (jour)",[1,0,0],["Aroma Zone — Crème Acide Hyaluronique & Acide Polyglutamique"]],
+      ["Crème hydratante (nuit)",[0,1,1],["Aroma Zone — Crème visage et corps désaltérante"]],
+      ["Crème solaire",[1,0,0],[]],
+      ["Lèvres",[1,1,1],["La neige — Bouncy & Firm Lip Treatment"]]
+    ];
+    function build(rows){var seq=1,prods=rows.map(function(row){return {id:"s"+(seq++),name:row[0],ctx:row[1].slice(),refs:row[2].map(function(l,i){return {id:"r"+(seq++),label:l,active:i===0};})};});return {seq:seq,products:prods};}
+    var seeds=[{id:"ml",name:"Maxime L",color:"#f59e0b"},{id:"mlj",name:"Maxime LJ",color:"#10b981"}];
+    var chain=Promise.resolve();
+    seeds.forEach(function(sd){var b=build(sd.id==="ml"?ML:MLJ);var routine={name:sd.name,color:sd.color,seq:b.seq,products:b.products};chain=chain.then(function(){return coll.doc(sd.id).set({json:JSON.stringify(routine)});});});
+    chain.then(function(){loadSkincare();}).catch(function(){loadSkincare();});
+  }
+  function renderSkincare(){
+    var body=document.getElementById("sk-body"),sel=document.getElementById("sk-persel"),title=document.getElementById("sk-title");
+    if(!body)return;
+    if(!skinData){body.innerHTML='<div class="sk-empty">Chargement…</div>';if(sel)sel.innerHTML="";return;}
+    ensureSkin();
+    var r=skinRoutine();
+    var LOCK='<span class="sk-lock" title="Lecture seule"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>';
+    if(sel)sel.innerHTML=skinData.routines.map(function(x){var lk=!skinEditable(x);return '<button type="button" class="sk-pchip'+(x.id===skinActive?" on":"")+'" data-sk-per="'+esc(x.id)+'"><span class="sk-av" style="background:'+esc(x.color||"#818cf8")+'">'+esc((x.name||"?")[0].toUpperCase())+'</span>'+esc(x.name||"Routine")+(lk?LOCK:'')+'</button>';}).join("");
+    skinReadOnly=!skinEditable(r);
+    if(title)title.innerHTML=r?("Skincare — "+esc(r.name)+(skinReadOnly?LOCK:'')):"Skincare";
+    if(!r){body.innerHTML='<div class="sk-empty">Aucune routine.</div>';return;}
+    var ed=!skinReadOnly,ci=skinCtxIdx();
+    var mbar='<div class="sk-momentbar"><div class="sk-momseg" id="sk-momseg"><button type="button" data-sk-m="matin"'+(skinMoment==="matin"?' class="on"':'')+'>☀️ Matin</button><button type="button" data-sk-m="soir"'+(skinMoment==="soir"?' class="on"':'')+'>🌙 Soir</button></div>'
+      +(skinMoment==="soir"?'<span class="sk-ret">Rétinol<button type="button" id="sk-ret-sw" class="sk-sw'+(skinRetinol?" on":"")+'"></button></span>':'')
+      +(ed?'<button type="button" class="btn primary sk-add" data-sk-add="1">+ Produit</button>':'')+'</div>';
+    /* Tableau (desktop) */
+    var rows=r.products.map(function(p){
+      var ar=skinActiveRef(p),nm='<td class="sk-name">'+(ed?'<span class="sk-drag" title="Glisser pour réordonner">⠿</span>':'')+esc(p.name)+(ar?'<small>'+esc(ar.label)+'</small>':'')+'</td>';
+      var cells="";for(var c=0;c<3;c++){cells+='<td class="sk-cell'+(c===ci?" sk-now":"")+(ed?"":" sk-ro")+'" data-sk-cell="'+esc(p.id)+'" data-sk-c="'+c+'">'+(p.ctx[c]?'<span class="sk-y">✓</span>':'<span class="sk-x">—</span>')+'</td>';}
+      var pen=ed?'<td><button type="button" class="sk-pen" data-sk-edit="'+esc(p.id)+'" title="Fiche produit"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg></button></td>':'<td></td>';
+      return '<tr data-sk-row="'+esc(p.id)+'">'+nm+cells+pen+'</tr>';
+    }).join("");
+    var tab='<div class="sk-tab-wrap"><table class="sk-tab"><tr><th class="sk-lh">Produit</th><th'+(ci===0?' class="sk-now"':'')+'>☀️ Matin</th><th'+(ci===1?' class="sk-now"':'')+'>🌙 Soir</th><th'+(ci===2?' class="sk-now"':'')+'>🌙 Soir + R</th><th style="width:34px"></th></tr>'+(rows||'')+'</table>'+(r.products.length?'':'<div class="sk-empty">Aucun produit'+(ed?' — « + Produit » pour commencer.':'.')+'</div>')+'</div>';
+    /* Liste du moment (mobile) */
+    var list=r.products.filter(function(p){return p.ctx[ci];});
+    var lrows=list.map(function(p,i){var ar=skinActiveRef(p);
+      return '<div class="sk-step"'+(ed?' data-sk-edit="'+esc(p.id)+'" style="cursor:pointer"':'')+'><span class="sk-n">'+(i+1)+'</span><span class="sk-tx"><b>'+esc(p.name)+(p.name.indexOf("Rétin")===0?' <span class="sk-rtag">RÉTINOL</span>':'')+'</b>'+(ar?'<small>'+esc(ar.label)+'</small>':'')+'</span>'+(ed?'<button type="button" class="sk-pen" data-sk-edit="'+esc(p.id)+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg></button>':'')+'</div>';
+    }).join("");
+    var listWrap='<div class="sk-list">'+(list.length?lrows:'<div class="sk-empty">Rien à ce moment-là.</div>')+(ed?'<div style="padding:10px 0 4px"><button type="button" class="btn primary" data-sk-add="1" style="width:100%;justify-content:center">+ Produit</button></div>':'')+'</div>';
+    body.innerHTML=mbar+tab+listWrap;
+  }
+  function skinMoveProduct(src,target,after){var r=skinRoutine();if(!r||!skinEditable(r))return;var a=r.products,it=null,i;for(i=0;i<a.length;i++)if(a[i].id===src){it=a.splice(i,1)[0];break;}if(!it)return;var ti=-1;for(i=0;i<a.length;i++)if(a[i].id===target){ti=i;break;}if(ti<0)a.push(it);else a.splice(after?ti+1:ti,0,it);skinSave(r);renderSkincare();}
+  function skinProd(id){var r=skinRoutine();if(!r)return null;for(var i=0;i<r.products.length;i++)if(r.products[i].id===id)return r.products[i];return null;}
+  function openSkinProdModal(id){
+    var r=skinRoutine();if(!r||!skinEditable(r))return;
+    var isNew=!id,p=isNew?{id:"s"+(r.seq++),name:"",ctx:[0,0,0],refs:[]}:skinProd(id);
+    if(!p)return;
+    modalCtx={type:"skinprod",id:p.id,isNew:isNew};
+    var refsHtml=p.refs.map(function(rf){return skinRefRow(rf);}).join("");
+    var body='<div style="margin-bottom:16px"><div class="skm-lab">Nom</div><input id="skm-name" class="skm-fld" value="'+esc(p.name)+'" placeholder="Nom du produit"/></div>'
+      +'<div style="margin-bottom:16px"><div class="skm-lab">Application</div><div class="skm-ctx" id="skm-ctx">'
+        +'<button type="button" data-skm-c="0"'+(p.ctx[0]?' class="on"':'')+'>☀️ Matin</button>'
+        +'<button type="button" data-skm-c="1"'+(p.ctx[1]?' class="on"':'')+'>🌙 Soir</button>'
+        +'<button type="button" data-skm-c="2"'+(p.ctx[2]?' class="on"':'')+'>🌙 Soir + R</button></div></div>'
+      +'<div><div class="skm-lab">Références</div><div id="skm-refs">'+refsHtml+'</div>'
+      +'<button type="button" class="skm-addref" data-skm-addref="1">+ référence</button>'
+      +'<div style="font-size:11px;color:var(--color-text-soft);margin-top:2px">Le rond vert = référence utilisée ; tape un rond vide pour la choisir.</div></div>';
+    openModal(isNew?"Nouveau produit":"Produit",body,!isNew);
+  }
+  function skinRefRow(rf){return '<div class="skm-ref'+(rf.active?" cur":"")+'" data-skm-ref="'+esc(rf.id)+'"><span class="skm-sel" data-skm-active="'+esc(rf.id)+'">'+(rf.active?"✓":"")+'</span><input value="'+esc(rf.label)+'" placeholder="Marque — produit" data-skm-lab="'+esc(rf.id)+'"/><button type="button" class="skm-del" data-skm-delref="'+esc(rf.id)+'">×</button></div>';}
+  function saveSkinProdModal(){
+    var r=skinRoutine();if(!r)return;var mb=document.getElementById("modal-body");if(!mb)return;
+    var p=modalCtx.isNew?{id:modalCtx.id,name:"",ctx:[0,0,0],refs:[]}:skinProd(modalCtx.id);if(!p)return;
+    p.name=(mb.querySelector("#skm-name").value||"").trim()||"Sans nom";
+    var ctxBtns=mb.querySelectorAll("#skm-ctx button");p.ctx=[0,0,0];for(var i=0;i<ctxBtns.length;i++)if(ctxBtns[i].classList.contains("on"))p.ctx[+ctxBtns[i].dataset.skmC]=1;
+    var refs=[],rows=mb.querySelectorAll(".skm-ref");for(i=0;i<rows.length;i++){var idr=rows[i].dataset.skmRef,inp=rows[i].querySelector("input"),lab=(inp.value||"").trim();if(!lab)continue;refs.push({id:idr,label:lab,active:rows[i].classList.contains("cur")});}
+    if(refs.length&&!refs.some(function(x){return x.active;}))refs[0].active=true;
+    p.refs=refs;
+    if(modalCtx.isNew)r.products.push(p);
+    skinSave(r);closeModal();renderSkincare();
+  }
+  function skinDeleteProd(){var r=skinRoutine();if(!r||!modalCtx)return;var nm=(skinProd(modalCtx.id)||{}).name||"";if(!confirm("Supprimer le produit"+(nm?" « "+nm+" »":"")+" ?"))return false;r.products=r.products.filter(function(x){return x.id!==modalCtx.id;});skinSave(r);renderSkincare();return true;}
+  /* Interactions Skincare */
+  (function(){
+    var body=document.getElementById("sk-body"),sel=document.getElementById("sk-persel");
+    if(body)enableDrag(body,"tr[data-sk-row]",".sk-drag",function(it){return it.dataset.skRow;},skinMoveProduct,"sk-drop-before","sk-drop-after");
+    if(sel)sel.addEventListener("click",function(e){var b=e.target.closest("[data-sk-per]");if(!b)return;skinActive=b.dataset.skPer;renderSkincare();syncHash();});
+    if(body)body.addEventListener("click",function(e){
+      var m=e.target.closest("[data-sk-m]");if(m){skinMoment=m.dataset.skM;renderSkincare();return;}
+      if(e.target.closest("#sk-ret-sw")){skinRetinol=!skinRetinol;renderSkincare();return;}
+      if(e.target.closest("[data-sk-add]")){openSkinProdModal(null);return;}
+      var pe=e.target.closest("[data-sk-edit]");if(pe){openSkinProdModal(pe.dataset.skEdit);return;}
+      var cl=e.target.closest("[data-sk-cell]");if(cl&&!cl.classList.contains("sk-ro")){var r=skinRoutine(),p=r&&skinProd(cl.dataset.skCell);if(p&&skinEditable(r)){var c=+cl.dataset.skC;p.ctx[c]=p.ctx[c]?0:1;skinSave(r);renderSkincare();}return;}
+    });
+    var mb=document.getElementById("modal-body");
+    if(mb)mb.addEventListener("click",function(e){
+      if(!(modalCtx&&modalCtx.type==="skinprod"))return;
+      var cb=e.target.closest("#skm-ctx button");if(cb){cb.classList.toggle("on");return;}
+      var ar=e.target.closest("[data-skm-active]");if(ar){var rows=mb.querySelectorAll(".skm-ref");for(var i=0;i<rows.length;i++){var on=rows[i].dataset.skmRef===ar.dataset.skmActive;rows[i].classList.toggle("cur",on);rows[i].querySelector(".skm-sel").textContent=on?"✓":"";}return;}
+      var dr=e.target.closest("[data-skm-delref]");if(dr){var row=dr.closest(".skm-ref");if(row)row.remove();return;}
+      if(e.target.closest("[data-skm-addref]")){var r=skinRoutine(),host=document.getElementById("skm-refs");if(host&&r){var tmp=document.createElement("div");tmp.innerHTML=skinRefRow({id:"r"+(r.seq++),label:"",active:host.children.length===0});host.appendChild(tmp.firstChild);var ni=host.lastChild.querySelector("input");if(ni)ni.focus();}return;}
+    });
+  })();
   /* ===== 5. Démarrage : auth, chargement & synchronisation ===== */
   if(CLOUD){
     var _ab=document.querySelectorAll(".acct-btn");for(var _i=0;_i<_ab.length;_i++)_ab[_i].hidden=false;
     var lf=document.getElementById("login-form");
     if(lf)lf.addEventListener("submit",function(e){e.preventDefault();var em=(document.getElementById("login-email").value||"").trim(),pw=document.getElementById("login-pass").value||"";document.getElementById("login-err").textContent="";auth.signInWithEmailAndPassword(em,pw).catch(function(err){document.getElementById("login-err").textContent="Connexion impossible. Vérifie l'e-mail et le mot de passe.";});});
-    auth.onAuthStateChanged(function(u){fbUser=u;if(u){showLogin(false);var _ab2=document.querySelectorAll(".acct-btn");for(var _j=0;_j<_ab2.length;_j++)_ab2[_j].textContent=acctInitial();loadCloud();loadAccess(u);}else{if(unsub){unsub();unsub=null;}if(congesUnsub){congesUnsub();congesUnsub=null;}congesData=null;moduleAccess={voyages:true,conges:true};applyModuleAccess();showLogin(true);hideBoot();}});
+    auth.onAuthStateChanged(function(u){fbUser=u;if(u){showLogin(false);var _ab2=document.querySelectorAll(".acct-btn");for(var _j=0;_j<_ab2.length;_j++)_ab2[_j].textContent=acctInitial();loadCloud();loadAccess(u);}else{if(unsub){unsub();unsub=null;}if(congesUnsub){congesUnsub();congesUnsub=null;}congesData=null;moduleAccess={voyages:true,conges:true,skincare:true};applyModuleAccess();showLogin(true);hideBoot();}});
   }else{
     store=loadStore();var lg=store.conges;if(lg)delete store.conges;congesData=loadCongesLocal()||lg||{};state=activeTrip();renderTripSwitch();renderAll();renderConges();save();hideBoot();bootRoute();
   }
