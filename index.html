@@ -2737,7 +2737,6 @@
   function loadSkincareColl(){
     var coll=db.collection("skincare");
     coll.get().then(function(snap){
-      if(snap.empty){seedSkincare(coll);return;}
       skinData=skinFromSnap(snap);skinSort();ensureSkin();skinCache();
       if(curModule==="skincare")renderSkincare();
       if(skinUnsub)skinUnsub();
@@ -2754,41 +2753,6 @@
     if(!(CLOUD&&fbUser&&db))return;
     clearTimeout(skinTimers[r.id]);
     skinTimers[r.id]=setTimeout(function(){try{db.collection("skincare").doc(r.id).set(skinPayload(r));}catch(e){}},700);
-  }
-  function seedSkincare(coll){
-    var ML=[
-      ["Huile démaquillante",[0,1,1],[]],
-      ["Nettoyant",[1,1,1],[]],
-      ["Lotion tonique",[1,1,1],["Hane Moa (Ginger 6) — Lotion Ginger 6 Booster Éclat & Anti-âge"]],
-      ["Rétinol / Rétinal",[0,0,1],[]],
-      ["Sérum Acide Hyaluronique",[1,1,1],["Aroma Zone — Sérum concentré d'Acide hyaluronique 3,5%"]],
-      ["Sérum Niacinamide",[1,1,0],["Aroma Zone — Sérum concentré Niacinamide 10%, Cuivre & Zinc"]],
-      ["Sérum Collagène",[1,0,1],["Aroma Zone — Sérum AA Collagène 1,5 %","The Ordinary — Multi-peptide + peptides de cuivre"]],
-      ["Contour des yeux",[1,1,1],["Nacomi — Sérum Contour des Yeux Caféine & Vitamine C","The Ordinary — Contour des yeux"]],
-      ["Crème hydratante (jour)",[1,1,0],["NovExpert — Fluide Pureté Zinc & Acide Azélaïque"]],
-      ["Crème hydratante (nuit)",[0,1,1],["Neutrogena — Collagen Bank Crème Hydratante"]],
-      ["Crème solaire",[1,0,0],[]]
-    ];
-    var MLJ=[
-      ["Huile démaquillante",[0,1,1],[]],
-      ["Nettoyant",[1,1,1],[]],
-      ["Lotion tonique/exfoliante",[1,1,1],["The Ordinary — Tonique Exfoliant à l'Acide Glycolique 7%","Aroma Zone — Lotion Tonique Niacinamide 5%, Zinc & Acide Hyaluronique"]],
-      ["Rétinol / Rétinal",[0,0,1],["The Ordinary — Rétinol 0.2% dans du Squalane","Aroma Zone — Sérum visage concentré Rétinal optimisé"]],
-      ["Sérum Vitamine C",[1,0,0],["The Ordinary — Sérum Éclat Multi-Antioxydant"]],
-      ["Sérum Acide Hyaluronique",[1,1,1],["Aroma Zone — Sérum concentré d'Acide hyaluronique 3,5%"]],
-      ["Sérum Niacinamide",[1,1,0],["Aroma Zone — Sérum concentré Niacinamide 10%, Cuivre & Zinc"]],
-      ["Sérum Collagène",[1,1,1],["Aroma Zone — Sérum AA Collagène 1,5 %"]],
-      ["Contour des yeux",[1,1,1],["The Ordinary — Sérum Multi-Peptides Yeux"]],
-      ["Crème hydratante (jour)",[1,0,0],["Aroma Zone — Crème Acide Hyaluronique & Acide Polyglutamique"]],
-      ["Crème hydratante (nuit)",[0,1,1],["Aroma Zone — Crème visage et corps désaltérante"]],
-      ["Crème solaire",[1,0,0],[]],
-      ["Lèvres",[1,1,1],["La neige — Bouncy & Firm Lip Treatment"]]
-    ];
-    function build(rows){var seq=1,prods=rows.map(function(row){return {id:"s"+(seq++),name:row[0],ctx:row[1].slice(),refs:row[2].map(function(l,i){return {id:"r"+(seq++),label:l,active:i===0};})};});return {seq:seq,products:prods};}
-    var seeds=[{id:"ml",name:"Maxime L",color:"#f59e0b"},{id:"mlj",name:"Maxime LJ",color:"#10b981"}];
-    var chain=Promise.resolve();
-    seeds.forEach(function(sd){var b=build(sd.id==="ml"?ML:MLJ);var routine={name:sd.name,color:sd.color,seq:b.seq,products:b.products};chain=chain.then(function(){return coll.doc(sd.id).set({json:JSON.stringify(routine)});});});
-    chain.then(function(){loadSkincare();}).catch(function(){loadSkincare();});
   }
   function renderSkincare(){
     var body=document.getElementById("sk-body"),sel=document.getElementById("sk-persel"),title=document.getElementById("sk-title");
