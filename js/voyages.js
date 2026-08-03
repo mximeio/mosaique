@@ -50,6 +50,8 @@
   });return total;}
   function personTripDays(trip,name){var d=0;(trip.periods||[]).forEach(function(p){if((p.members||[]).indexOf(name)>=0)d+=tDays(trip,p);});return d;}
   function tripRange(t){var ps=(t.periods||[]).filter(function(p){return p.start&&p.end;});if(!ps.length)return"";var mn=ps[0].start,mx=ps[0].end;ps.forEach(function(p){if(p.start<mn)mn=p.start;if(p.end>mx)mx=p.end;});return frDate(mn,{day:"numeric",month:"short"})+" → "+frDate(mx,{day:"numeric",month:"short",year:"numeric"});}
+  /* Plage limitée aux périodes où `name` est présent (pour les stats perso) ; retombe sur la plage complète si aucune période membre. */
+  function personTripRange(t,name){var ps=(t.periods||[]).filter(function(p){return p.start&&p.end&&(p.members||[]).indexOf(name)>=0;});if(!ps.length)return tripRange(t);var mn=ps[0].start,mx=ps[0].end;ps.forEach(function(p){if(p.start<mn)mn=p.start;if(p.end>mx)mx=p.end;});return frDate(mn,{day:"numeric",month:"short"})+" → "+frDate(mx,{day:"numeric",month:"short",year:"numeric"});}
   function tripMainYear(t){var by={};(t.periods||[]).forEach(function(p){if(!p.start||!p.end)return;var d=new Date(p.start+"T00:00:00"),e=new Date(p.end+"T00:00:00");while(d<e){var y=d.getFullYear();by[y]=(by[y]||0)+1;d.setDate(d.getDate()+1);}});var best="",max=-1;for(var y in by){if(by[y]>max){max=by[y];best=y;}}return best||((tripStart(t)||"").slice(0,4));}
   function activeTrip(){
     for(var i=0;i<store.trips.length;i++)if(store.trips[i].id===store.activeId){if(canSee(store.trips[i]))return store.trips[i];break;}
@@ -621,7 +623,7 @@
     store.trips.filter(canSee).sort(byStartDesc).forEach(function(t){
       var name=personInTrip(t);if(!name){missing++;return;}
       var days=personTripDays(t,name),cost=personTripCost(t,name);
-      rows.push({name:(t.tripName||"Sans titre"),cost:cost,days:days,perDay:days>0?cost/days:0,color:tripColor(t),dates:tripRange(t),arch:!!t.archived,year:tripMainYear(t)||"—"});
+      rows.push({name:(t.tripName||"Sans titre"),cost:cost,days:days,perDay:days>0?cost/days:0,color:tripColor(t),dates:personTripRange(t,name),arch:!!t.archived,year:tripMainYear(t)||"—"});
     });
     var miss=missing?'<div class="field-hint" style="margin-top:14px">'+missing+' voyage'+(missing>1?'s':'')+' non compté'+(missing>1?'s':'')+' : ton e-mail n\'y est pas renseigné.</div>':'';
     if(!rows.length){
