@@ -1021,3 +1021,58 @@
   .skm-ref input:focus{border-bottom-color:var(--color-primary)}
   .skm-ref .skm-del{border:none;background:transparent;color:var(--color-text-soft);cursor:pointer;font-size:15px;flex:none}
   .skm-addref{font-size:13px;font-weight:600;color:var(--color-primary);cursor:pointer;background:none;border:none;padding:6px 0}
+
+  /* ===== Notes en Markdown (module Voyages) =====
+     Onglets Aperçu/Écrire ; au-dessus de 900px l'onglet Écrire garde le rendu à côté.
+     La modale reste .modal--notes (min(960px,95vw), 90vh). */
+  .nm{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
+  .nm-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--color-border);background:var(--color-surface);flex:none}
+  .nm-seg{display:inline-flex;align-items:center;height:38px;box-sizing:border-box;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:10px;padding:3px;gap:2px;flex:none}
+  .nm-seg button{border:none;background:transparent;font:inherit;font-size:13px;line-height:1;font-weight:600;color:var(--color-text-mute);border-radius:7px;padding:6px 14px;cursor:pointer}
+  .nm-seg button.on{color:#fff;background:var(--color-primary)}
+  .nm-tools{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+  .nm-tools button{border:1px solid transparent;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--color-text-light);border-radius:var(--radius-sm);padding:6px 9px;cursor:pointer;line-height:1;min-width:30px}
+  .nm-tools button:hover{background:var(--color-surface-alt);border-color:var(--color-border);color:var(--color-text)}
+  .nm-tools .nm-s{text-decoration:line-through;text-decoration-thickness:1.5px}
+  .nm-sep{width:1px;height:18px;background:var(--color-border);margin:0 3px;flex:none}
+  .nm-body{display:grid;grid-template-columns:1fr;flex:1;min-height:0}
+  .nm-body.nm-duo2{grid-template-columns:1fr 1fr}
+  .nm-body.nm-duo2 .nm-prev{border-left:1px solid var(--color-border)}
+  .nm-src{border:none;outline:none;resize:none;padding:18px 22px 64px;font-family:var(--font-mono);font-size:14px;line-height:1.65;color:var(--color-text);background:var(--color-surface);min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .nm-prev{padding:18px 22px 64px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;min-height:0;background:var(--color-surface)}
+  .nm .hidden{display:none}
+  /* rendu du Markdown : on reste dans l'échelle typo 10·11·12·13·14·15·16·18·22·34 */
+  .nm-prev h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:20px 0 8px}
+  .nm-prev h2{font-size:18px;font-weight:700;margin:18px 0 8px}
+  .nm-prev h3{font-size:16px;font-weight:600;margin:14px 0 6px}
+  .nm-prev h4,.nm-prev h5,.nm-prev h6{font-size:15px;font-weight:600;margin:12px 0 6px}
+  .nm-prev > :first-child{margin-top:0}
+  .nm-prev p{margin:8px 0}
+  .nm-prev ul,.nm-prev ol{margin:8px 0 8px 22px}
+  .nm-prev li{margin:3px 0}
+  .nm-prev a{color:var(--color-primary);text-decoration:underline}
+  .nm-prev img{max-width:100%;height:auto;border-radius:var(--radius-sm);margin:6px 0}
+  .nm-prev blockquote{margin:10px 0;padding:2px 0 2px 12px;border-left:3px solid var(--color-border);color:var(--color-text-light)}
+  .nm-prev hr{border:none;border-top:1px solid var(--color-border);margin:16px 0}
+  .nm-prev code{font-family:var(--font-mono);font-size:13px;background:var(--color-surface-alt);border:1px solid var(--color-border-light);border-radius:4px;padding:1px 5px}
+  .nm-prev pre{background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:10px 12px;overflow-x:auto;margin:10px 0}
+  .nm-prev pre code{background:none;border:none;padding:0}
+  /* les tableaux : le cas qui motivait le chantier */
+  .nm-prev .nm-tw,.nm-prev table{margin:12px 0}
+  .nm-prev table{border-collapse:collapse;width:100%;font-size:13px;display:block;overflow-x:auto;white-space:normal}
+  .nm-prev th{background:var(--color-surface-alt);font-weight:600;text-align:left}
+  .nm-prev th,.nm-prev td{border:1px solid var(--color-border);padding:7px 10px;vertical-align:top}
+  .nm-prev tbody tr:nth-child(even) td{background:var(--color-surface-alt)}
+  @media(max-width:640px){
+    .nm-src,.nm-prev{padding:14px 16px 56px}
+    .nm-bar{padding:7px 10px;gap:6px}
+    .nm-tools button{padding:6px 7px;min-width:28px}
+  }
+  /* Corrections de spécificité — trois fuites relevées le 18/08/2026 :
+     1. l'attribut `hidden` est battu par `display:flex` sur .nm-tools ;
+     2. `thead th` (règle GLOBALE, non cantonnée) impose 10px/majuscules/gris ;
+     3. `tbody td` (idem) impose text-align:right et white-space:nowrap.
+     On les neutralise ici, dans l'aperçu seulement. */
+  .nm-tools[hidden]{display:none}
+  .nm-prev thead th{font-size:13px;font-weight:600;text-transform:none;letter-spacing:normal;color:var(--color-text);text-align:left;white-space:normal;padding:7px 10px;border:1px solid var(--color-border);border-bottom:1px solid var(--color-border);background:var(--color-surface-alt)}
+  .nm-prev tbody td{font-size:13px;text-align:left;white-space:normal;padding:7px 10px;border:1px solid var(--color-border);border-bottom:1px solid var(--color-border);color:var(--color-text)}

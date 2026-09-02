@@ -15,7 +15,7 @@ Budget prévisionnel partagé pour organiser un voyage à plusieurs :
 - personnes, périodes/séjours (nuits et jours) ;
 - dépenses avec **répartition automatique** (au prorata des jours/nuits, par séjour, par
   personne ou personnalisée) ;
-- suivi « réservé / payé », notes riches par voyage, parts par personne, statistiques ;
+- suivi « réservé / payé », notes en Markdown par voyage, parts par personne, statistiques ;
 - liens profonds vers un voyage (`#voyages-…`) pour le partager.
 
 ### 🗓️ Congés
@@ -39,7 +39,9 @@ Routines de soins, une par personne :
 - **Front** : HTML / CSS / JavaScript **vanilla**, sans framework ni étape de build.
 - **Données** : [Firebase](https://firebase.google.com/) — Authentication (e-mail/mot de passe)
   + Cloud Firestore (synchronisation temps réel entre appareils, `localStorage` en cache).
-- **Éditeur de texte riche** : [Quill](https://quilljs.com/) (notes de voyage).
+- **Notes** : rédigées en **Markdown**, rendues par [marked](https://marked.js.org/) — onglets
+  « Aperçu / Écrire », barre d'outils, et conversion automatique du HTML collé.
+- **Éditeur de texte riche** : [Quill](https://quilljs.com/) (commentaires de dépense).
 - **PWA** : installable (manifest + icônes), plein écran sur mobile.
 - **Hébergement** : GitHub Pages.
 

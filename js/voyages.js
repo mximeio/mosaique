@@ -273,22 +273,243 @@
   function hasQuill(){return typeof Quill!=="undefined";}
   var NOTE_FULL='<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" fill-rule="evenodd"><path d="M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm4 5.5a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2H9Zm0 4a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2H9Z"/></svg>';
   var NOTE_OUTLINE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14v16H5zM9 9h6M9 13h6"/></svg>';
-  function notesEmpty(){var h=(typeof state.notes==="string"?state.notes:"");return h.replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/\s+/g,"").length===0;}
+  /* ===== Notes en Markdown =====
+     Migration ADDITIVE : le Markdown vit dans `notesMd`, l'ancien HTML reste dans
+     `notes` et n'est JAMAIS ecrase (retour arriere possible sans sauvegarde). */
+  function mdHasRender(){return typeof marked!=="undefined";}
+  function looksLikeHtml(s){return /<(p|div|h[1-6]|table|ul|ol|li|strong|em|br|img|a)\b[^>]*>/i.test(s||"");}
+  function noteMd(t){
+    if(!t)return "";
+    if(typeof t.notesMd==="string")return t.notesMd;
+    var h=(typeof t.notes==="string")?t.notes:"";
+    if(!h)return "";
+    /* premiere ouverture : on convertit une fois, sans toucher a `notes` */
+    t.notesMd = looksLikeHtml(h) ? htmlToMd(h) : h;
+    save();
+    return t.notesMd;
+  }
+  function setNoteMd(t,v){if(t){t.notesMd=v;save();renderNotesBtn();}}
+  function notesEmpty(){return noteMd(state).replace(/[\s*_#>|`~\-]/g,"").length===0;}
   function renderNotesBtn(){var b=document.getElementById("notes-btn");if(!b)return;var full=!notesEmpty();var ic=b.querySelector(".notes-ico");if(ic)ic.innerHTML=full?NOTE_FULL:NOTE_OUTLINE;b.classList.toggle("has-note",full);b.title=full?"Notes du voyage":"Notes du voyage (vide)";}
   function openNotesModal(){
     modalCtx={type:"notes"};
-    var html=(typeof state.notes==="string"?state.notes:"");
-    var body=hasQuill()?'<div id="note-wrap"><div id="note-editor"></div></div>':rtEditor("note-text","Planning du périple, réservations (références, liens, adresses), idées de restos, numéros utiles…",300,html);
+    var md=noteMd(state);
+    var body='<div id="nm" class="nm">'
+      +'<div class="nm-bar">'
+        +'<div class="nm-seg" id="nm-seg">'
+          +'<button type="button" data-nm="apercu" class="on">Aperçu</button>'
+          +'<button type="button" data-nm="ecrire">Écrire</button>'
+        +'</div>'
+        +'<div class="nm-tools" id="nm-tools" hidden>'
+          +'<button type="button" data-w="**" title="Gras (Ctrl+B)"><b>B</b></button>'
+          +'<button type="button" data-w="*" title="Italique (Ctrl+I)"><i>I</i></button>'
+          +'<button type="button" data-w="~~" title="Barré"><span class="nm-s">S</span></button>'
+          +'<span class="nm-sep"></span>'
+          +'<button type="button" data-p="## " title="Titre">H2</button>'
+          +'<button type="button" data-p="### " title="Sous-titre">H3</button>'
+          +'<span class="nm-sep"></span>'
+          +'<button type="button" data-p="- " title="Liste à puces">•</button>'
+          +'<button type="button" data-p="1. " title="Liste numérotée">1.</button>'
+          +'<button type="button" data-p="> " title="Citation">&rdquo;</button>'
+          +'<span class="nm-sep"></span>'
+          +'<button type="button" data-nma="lien" title="Lien">Lien</button>'
+          +'<button type="button" data-nma="tableau" title="Tableau">Tableau</button>'
+        +'</div>'
+        +'<span style="flex:1"></span>'
+        +'<button type="button" class="btn sm" data-nma="export" title="Télécharger en .md">Exporter</button>'
+      +'</div>'
+      +'<div class="nm-body" id="nm-duo">'
+        +'<textarea class="nm-src hidden" id="nm-src" spellcheck="false" placeholder="Planning, réservations (réfs, liens, adresses), idées, numéros utiles…"></textarea>'
+        +'<div class="nm-prev" id="nm-prev"></div>'
+      +'</div>'
+    +'</div>';
     openModal("Notes du voyage",body,false);
-    var md=document.querySelector(".modal");if(md)md.classList.add("modal--notes");
+    var mo=document.querySelector(".modal");if(mo)mo.classList.add("modal--notes");
     var ft=document.querySelector(".modal-foot");if(ft)ft.style.display="none";
-    if(hasQuill()){
-      notesQuill=new Quill("#note-editor",{theme:"snow",bounds:document.getElementById("modal"),placeholder:"Planning, réservations (réfs, liens, adresses), idées, numéros utiles…",modules:{toolbar:QTOOL}});
-      notesLoading=true;notesQuill.root.innerHTML=html;notesLoading=false;
-      notesQuill.on("text-change",function(){if(notesLoading)return;state.notes=notesQuill.root.innerHTML;save();renderNotesBtn();});
-    }
+    var src=document.getElementById("nm-src");
+    src.value=md;
+    nmApply();
     syncHash();
   }
+  function nmRender(){
+    var src=document.getElementById("nm-src"),pv=document.getElementById("nm-prev");
+    if(!src||!pv)return;
+    if(mdHasRender()){try{pv.innerHTML=marked.parse(src.value,{gfm:true,breaks:true});}catch(e){pv.textContent=src.value;}}
+    else pv.textContent=src.value;   /* CDN indisponible : on montre au moins le texte */
+  }
+  function nmLarge(){return window.innerWidth>900;}
+  function nmApply(){
+    var seg=document.getElementById("nm-seg");if(!seg)return;
+    var b=seg.querySelector("button.on"),apercu=!b||b.dataset.nm==="apercu";
+    var src=document.getElementById("nm-src"),pv=document.getElementById("nm-prev"),
+        duo=document.getElementById("nm-duo"),tools=document.getElementById("nm-tools");
+    tools.hidden=apercu;
+    if(apercu){src.classList.add("hidden");pv.classList.remove("hidden");duo.classList.remove("nm-duo2");nmRender();}
+    else{
+      src.classList.remove("hidden");
+      var l=nmLarge();
+      pv.classList.toggle("hidden",!l);
+      duo.classList.toggle("nm-duo2",l);
+      if(l)nmRender();
+    }
+  }
+  /* --- outils d'ecriture --- */
+  function nmWrap(av,ap){
+    var t=document.getElementById("nm-src");if(!t)return;
+    var d=t.selectionStart,f=t.selectionEnd,sel=t.value.slice(d,f)||"texte";
+    t.value=t.value.slice(0,d)+av+sel+(ap||av)+t.value.slice(f);
+    t.focus();t.setSelectionRange(d+av.length,d+av.length+sel.length);nmChanged();
+  }
+  function nmPrefix(pre){
+    var t=document.getElementById("nm-src");if(!t)return;
+    var d=t.selectionStart,f=t.selectionEnd,v=t.value;
+    var deb=v.lastIndexOf("\n",d-1)+1,fin=v.indexOf("\n",f);if(fin<0)fin=v.length;
+    var lignes=v.slice(deb,fin).split("\n").map(function(l,i){
+      var p=/^\d+\. /.test(pre)?(i+1)+". ":pre;
+      return p+l.replace(/^(#{1,6} |[-*] |\d+\. |> )/,"");
+    });
+    t.value=v.slice(0,deb)+lignes.join("\n")+v.slice(fin);
+    t.focus();t.setSelectionRange(deb,deb+lignes.join("\n").length);nmChanged();
+  }
+  function nmInsert(txt){
+    var t=document.getElementById("nm-src");if(!t)return;
+    var d=t.selectionStart;
+    t.value=t.value.slice(0,d)+txt+t.value.slice(d);
+    t.focus();t.setSelectionRange(d+txt.length,d+txt.length);nmChanged();
+  }
+  function nmChanged(){
+    var t=document.getElementById("nm-src");if(!t)return;
+    setNoteMd(state,t.value);
+    if(!document.getElementById("nm-prev").classList.contains("hidden"))nmRender();
+  }
+  function nmExport(){
+    var t=document.getElementById("nm-src");if(!t)return;
+    var nom=(state.tripName||"voyage").replace(/[^\w\-]+/g,"-").replace(/^-+|-+$/g,"")||"voyage";
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([t.value],{type:"text/markdown;charset=utf-8"}));
+    a.download="notes-"+nom+".md";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+    toast("Notes exportées");
+  }
+  /* --- HTML -> Markdown : sert a la migration ET au collage --- */
+  function htmlToMd(html){
+    var root=document.createElement("div");root.innerHTML=html;
+    var jetables=root.querySelectorAll("span.ql-ui, style, script");
+    for(var i=0;i<jetables.length;i++)jetables[i].parentNode.removeChild(jetables[i]);
+    function inline(n){
+      var out="",cs=n.childNodes;
+      for(var k=0;k<cs.length;k++){
+        var c=cs[k];
+        if(c.nodeType===3){out+=c.nodeValue.replace(/\u00a0/g," ");continue;}
+        if(c.nodeType!==1)continue;
+        var t=c.tagName.toLowerCase(),x=inline(c);
+        if(t==="strong"||t==="b")out+=x.trim()?"**"+x.trim()+"**":"";
+        else if(t==="em"||t==="i")out+=x.trim()?"*"+x.trim()+"*":"";
+        else if(t==="s"||t==="del")out+=x.trim()?"~~"+x.trim()+"~~":"";
+        else if(t==="code")out+=x.trim()?"`"+x.trim()+"`":"";
+        else if(t==="a")out+="["+x+"]("+(c.getAttribute("href")||"")+")";
+        else if(t==="img")out+="!["+(c.getAttribute("alt")&&c.getAttribute("alt").indexOf("http")!==0?c.getAttribute("alt"):"")+"]("+(c.getAttribute("src")||"")+")";
+        else if(t==="br")out+="  \n";
+        else out+=x;
+      }
+      return out;
+    }
+    function cell(td){return inline(td).replace(/\s+/g," ").replace(/\|/g,"\\|").trim();}
+    var blocs=[];
+    function bloc(el){
+      var t=el.tagName.toLowerCase(),x;
+      if(/^h[1-6]$/.test(t)){x=inline(el).trim();if(x)blocs.push(new Array(+t[1]+1).join("#")+" "+x);}
+      else if(t==="p"){x=inline(el).trim();if(x)blocs.push(x);}
+      else if(t==="blockquote"){x=inline(el).trim();if(x)blocs.push("> "+x);}
+      else if(t==="pre"){blocs.push("```\n"+el.textContent.replace(/\s+$/,"")+"\n```");}
+      else if(t==="hr"){blocs.push("---");}
+      else if(t==="ol"||t==="ul"){
+        var puce=(t==="ul")||!!el.querySelector("li[data-list=bullet]"),l=[];
+        for(var i=0;i<el.children.length;i++){
+          var li=inline(el.children[i]).trim();
+          if(li)l.push((puce?"- ":(i+1)+". ")+li);
+        }
+        if(l.length)blocs.push(l.join("\n"));
+      }
+      else if(t==="table"){
+        var trs=el.querySelectorAll("tr"),rows=[],n=0,r,j;
+        for(j=0;j<trs.length;j++){r=[];for(var q=0;q<trs[j].children.length;q++)r.push(cell(trs[j].children[q]));rows.push(r);if(r.length>n)n=r.length;}
+        if(!rows.length)return;
+        /* en-tete fusionnee (1 seule cellule) : on complete pour garder un tableau valide */
+        if(rows[0].length===1&&n>1){while(rows[0].length<n)rows[0].push("");}
+        var pad=function(rw){var c2=rw.slice();while(c2.length<n)c2.push("");return "| "+c2.join(" | ")+" |";};
+        var out=[pad(rows[0]),"|"+new Array(n+1).join(" --- |")];
+        for(j=1;j<rows.length;j++)out.push(pad(rows[j]));
+        blocs.push(out.join("\n"));
+      }
+      else if(el.children.length){for(var m=0;m<el.children.length;m++)bloc(el.children[m]);}
+      else{x=inline(el).trim();if(x)blocs.push(x);}
+    }
+    for(var z=0;z<root.children.length;z++)bloc(root.children[z]);
+    return blocs.join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
+  }
+  /* --- Interactions de l'editeur de notes (delegation sur #modal-body) --- */
+  (function(){
+    var mb=document.getElementById("modal-body");
+    if(!mb)return;
+    mb.addEventListener("click",function(e){
+      if(!notesOpen())return;
+      var sg=e.target.closest("#nm-seg button[data-nm]");
+      if(sg){
+        var bs=sg.parentNode.querySelectorAll("button");
+        for(var i=0;i<bs.length;i++)bs[i].classList.toggle("on",bs[i]===sg);
+        nmApply();
+        if(sg.dataset.nm==="ecrire"){
+          /* Differe d'un tick : le passage de display:none a visible fait replacer le
+             curseur en fin de champ par le navigateur, APRES nous. Mesure du 18/08/2026. */
+          setTimeout(function(){var t=document.getElementById("nm-src");
+            if(t){t.focus();t.setSelectionRange(0,0);t.scrollTop=0;}},0);
+        }
+        return;
+      }
+      var b=e.target.closest("#nm-tools button, .nm-bar button[data-nma]");
+      if(!b)return;
+      if(b.dataset.w)return nmWrap(b.dataset.w);
+      if(b.dataset.p)return nmPrefix(b.dataset.p);
+      if(b.dataset.nma==="export")return nmExport();
+      if(b.dataset.nma==="tableau")return nmInsert("\n| Colonne A | Colonne B |\n| --- | --- |\n|  |  |\n|  |  |\n\n");
+      if(b.dataset.nma==="lien"){
+        var t2=document.getElementById("nm-src");if(!t2)return;
+        var d=t2.selectionStart,f=t2.selectionEnd,sel=t2.value.slice(d,f)||"texte du lien";
+        t2.value=t2.value.slice(0,d)+"["+sel+"](url)"+t2.value.slice(f);
+        t2.focus();t2.setSelectionRange(d+sel.length+3,d+sel.length+6);nmChanged();
+      }
+    });
+    mb.addEventListener("input",function(e){if(notesOpen()&&e.target.id==="nm-src")nmChanged();});
+    mb.addEventListener("keydown",function(e){
+      if(!notesOpen()||e.target.id!=="nm-src")return;
+      var meta=e.ctrlKey||e.metaKey;
+      if(meta&&e.key.toLowerCase()==="b"){e.preventDefault();return nmWrap("**");}
+      if(meta&&e.key.toLowerCase()==="i"){e.preventDefault();return nmWrap("*");}
+      if(e.key==="Enter"&&!e.shiftKey){
+        var t=e.target,d=t.selectionStart,v=t.value,deb=v.lastIndexOf("\n",d-1)+1,ligne=v.slice(deb,d);
+        var m=ligne.match(/^([-*] |\d+\. |> )/);if(!m)return;
+        e.preventDefault();
+        if(ligne.trim()===m[1].trim()){t.value=v.slice(0,deb)+v.slice(d);t.setSelectionRange(deb,deb);nmChanged();return;}
+        var suite=/^\d+\. /.test(m[1])?(parseInt(m[1],10)+1)+". ":m[1];
+        t.value=v.slice(0,d)+"\n"+suite+v.slice(d);
+        t.setSelectionRange(d+1+suite.length,d+1+suite.length);nmChanged();
+      }
+    });
+    /* Collage depuis un chat : le presse-papier porte du HTML, on le convertit */
+    mb.addEventListener("paste",function(e){
+      if(!notesOpen()||e.target.id!=="nm-src")return;
+      var html=e.clipboardData&&e.clipboardData.getData("text/html");
+      if(!html)return;                       /* texte brut : comportement normal */
+      e.preventDefault();
+      var md=htmlToMd(html),t=e.target,d=t.selectionStart,f=t.selectionEnd;
+      t.value=t.value.slice(0,d)+md+t.value.slice(f);
+      t.setSelectionRange(d+md.length,d+md.length);
+      nmChanged();toast("Collage converti en Markdown");
+    });
+    window.addEventListener("resize",function(){if(notesOpen())nmApply();});
+  })();
   function renderAll(){renderMatrix();renderExpenses();renderParts();renderNotesBtn();}
 
   function addPerson(){
@@ -769,7 +990,6 @@
   });
   c.addEventListener("input",function(e){
     if(e.target.id==="trip-name"){state.tripName=e.target.value;save();renderTripSwitch();return;}
-    if(e.target.id==="note-text"){state.notes=e.target.innerHTML;save();renderNotesBtn();return;}
     var x=e.target.closest("[data-exp]");
     if(x){var ex=expById(x.dataset.exp);if(!ex)return;var f=x.dataset.field;
       if(f==="label"){ex.label=e.target.value;save();renderParts();return;}
@@ -884,6 +1104,6 @@
     else if(cmd==="removeFormat"){try{document.execCommand("removeFormat",false,null);}catch(_){}try{document.execCommand("formatBlock",false,"<p>");}catch(_){}}
     else try{document.execCommand(cmd,false,null);}catch(_){}
     var area=b.closest(".rt").querySelector(".rt-area");
-    if(area){area.focus();if(area.id==="note-text"){state.notes=area.innerHTML;save();}}
+    if(area)area.focus();
   });
   
