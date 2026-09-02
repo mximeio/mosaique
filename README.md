@@ -40,7 +40,8 @@ Routines de soins, une par personne :
 - **Données** : [Firebase](https://firebase.google.com/) — Authentication (e-mail/mot de passe)
   + Cloud Firestore (synchronisation temps réel entre appareils, `localStorage` en cache).
 - **Notes** : rédigées en **Markdown**, rendues par [marked](https://marked.js.org/) — onglets
-  « Aperçu / Écrire », barre d'outils, et conversion automatique du HTML collé.
+  « Aperçu / Écrire », barre d'outils, et conversion automatique du contenu collé depuis
+  n'importe quelle page web.
 - **Éditeur de texte riche** : [Quill](https://quilljs.com/) (commentaires de dépense).
 - **PWA** : installable (manifest + icônes), plein écran sur mobile.
 - **Hébergement** : GitHub Pages.

@@ -1086,3 +1086,17 @@
   /* filet de securite : toute autre image reste bornee en hauteur */
   .nm-prev img{max-height:420px;width:auto}
   @media(max-width:640px){.nm-prev p.nm-fig img{max-height:110px}}
+  /* Le <textarea> n'a pas de hauteur intrinseque : en mode Ecrire la modale se
+     tassait sur le contenu (289 px mesures a 375 px de large). On plancher la zone
+     d'edition pour qu'elle ait toujours de la place, sans dependre du 90vh. */
+  .nm-body{min-height:min(58vh,460px)}
+  .nm-src{height:100%}
+  /* ⚠️ 16px et non 14 : sous 16 px, iOS Safari zoome a la mise au point du champ
+     (voir BACKLOG.md, chantier « Zoom iOS a la saisie »). 16 est dans l'echelle typo. */
+  .nm-src{font-size:16px}
+  @media(max-width:640px){
+    .nm-body{min-height:min(52vh,400px)}
+    /* barre d'outils : elle s'enroule sur 2 lignes a 375 px, on la resserre */
+    .nm-tools{gap:2px}
+    .nm-tools button{padding:6px 6px;min-width:26px;font-size:12px}
+  }

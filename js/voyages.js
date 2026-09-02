@@ -315,8 +315,6 @@
           +'<button type="button" data-nma="lien" title="Lien">Lien</button>'
           +'<button type="button" data-nma="tableau" title="Tableau">Tableau</button>'
         +'</div>'
-        +'<span style="flex:1"></span>'
-        +'<button type="button" class="btn sm" data-nma="export" title="Télécharger en .md">Exporter</button>'
       +'</div>'
       +'<div class="nm-body" id="nm-duo">'
         +'<textarea class="nm-src hidden" id="nm-src" spellcheck="false" placeholder="Planning, réservations (réfs, liens, adresses), idées, numéros utiles…"></textarea>'
@@ -391,16 +389,6 @@
     var t=document.getElementById("nm-src");if(!t)return;
     setNoteMd(state,t.value);
     if(!document.getElementById("nm-prev").classList.contains("hidden"))nmRender();
-  }
-  function nmExport(){
-    var t=document.getElementById("nm-src");if(!t)return;
-    var nom=(state.tripName||"voyage").replace(/[^\w\-]+/g,"-").replace(/^-+|-+$/g,"")||"voyage";
-    var a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([t.value],{type:"text/markdown;charset=utf-8"}));
-    a.download="notes-"+nom+".md";
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
-    toast("Notes exportées");
   }
   /* --- HTML -> Markdown : sert a la migration ET au collage --- */
   function htmlToMd(html){
@@ -482,7 +470,6 @@
       if(!b)return;
       if(b.dataset.w)return nmWrap(b.dataset.w);
       if(b.dataset.p)return nmPrefix(b.dataset.p);
-      if(b.dataset.nma==="export")return nmExport();
       if(b.dataset.nma==="tableau")return nmInsert("\n| Colonne A | Colonne B |\n| --- | --- |\n|  |  |\n|  |  |\n\n");
       if(b.dataset.nma==="lien"){
         var t2=document.getElementById("nm-src");if(!t2)return;
