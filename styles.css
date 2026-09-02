@@ -1076,3 +1076,13 @@
   .nm-tools[hidden]{display:none}
   .nm-prev thead th{font-size:13px;font-weight:600;text-transform:none;letter-spacing:normal;color:var(--color-text);text-align:left;white-space:normal;padding:7px 10px;border:1px solid var(--color-border);border-bottom:1px solid var(--color-border);background:var(--color-surface-alt)}
   .nm-prev tbody td{font-size:13px;text-align:left;white-space:normal;padding:7px 10px;border:1px solid var(--color-border);border-bottom:1px solid var(--color-border);color:var(--color-text)}
+  /* Images des notes : une image collee depuis un chat arrive seule dans son <p>.
+     Rendue telle quelle elle occupe toute la largeur (782 px mesures) — on la ramene
+     a une vignette alignee, comme dans le chat d'origine. Clic = agrandir sur place. */
+  .nm-prev p.nm-fig{display:inline-block;margin:0 6px 6px 0;vertical-align:top;line-height:0}
+  .nm-prev p.nm-fig img{max-height:150px;width:auto;max-width:100%;margin:0;border:1px solid var(--color-border);border-radius:var(--radius-sm);cursor:zoom-in;transition:max-height .15s}
+  .nm-prev p.nm-fig.nm-fig-open{display:block;line-height:inherit}
+  .nm-prev p.nm-fig.nm-fig-open img{max-height:none;width:100%;cursor:zoom-out}
+  /* filet de securite : toute autre image reste bornee en hauteur */
+  .nm-prev img{max-height:420px;width:auto}
+  @media(max-width:640px){.nm-prev p.nm-fig img{max-height:110px}}

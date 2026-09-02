@@ -334,8 +334,18 @@
   function nmRender(){
     var src=document.getElementById("nm-src"),pv=document.getElementById("nm-prev");
     if(!src||!pv)return;
-    if(mdHasRender()){try{pv.innerHTML=marked.parse(src.value,{gfm:true,breaks:true});}catch(e){pv.textContent=src.value;}}
+    if(mdHasRender()){try{pv.innerHTML=marked.parse(src.value,{gfm:true,breaks:true});nmFigures(pv);}catch(e){pv.textContent=src.value;}}
     else pv.textContent=src.value;   /* CDN indisponible : on montre au moins le texte */
+  }
+  /* Une image collee depuis un chat arrive seule dans son <p> : sans traitement elle
+     s'affiche en pleine largeur (mesure : 782x586). On les rend en vignettes alignees,
+     comme dans le chat d'origine, et un clic les agrandit sur place. */
+  function nmFigures(pv){
+    var ps=pv.querySelectorAll("p"),i;
+    for(i=0;i<ps.length;i++){
+      var kids=ps[i].childNodes;
+      if(kids.length===1&&kids[0].nodeType===1&&kids[0].tagName==="IMG")ps[i].className="nm-fig";
+    }
   }
   function nmLarge(){return window.innerWidth>900;}
   function nmApply(){
@@ -480,6 +490,11 @@
         t2.value=t2.value.slice(0,d)+"["+sel+"](url)"+t2.value.slice(f);
         t2.focus();t2.setSelectionRange(d+sel.length+3,d+sel.length+6);nmChanged();
       }
+    });
+    mb.addEventListener("click",function(e){
+      if(!notesOpen())return;
+      var im=e.target.closest("#nm-prev p.nm-fig img");
+      if(im)im.parentNode.classList.toggle("nm-fig-open");
     });
     mb.addEventListener("input",function(e){if(notesOpen()&&e.target.id==="nm-src")nmChanged();});
     mb.addEventListener("keydown",function(e){
