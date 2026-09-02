@@ -688,7 +688,7 @@
   .modal{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);width:min(640px,94vw);max-height:92vh;max-height:92dvh;overflow:hidden;display:flex;flex-direction:column}
   .modal.modal--sm{width:min(440px,94vw)}
   .ql-snow .ql-tooltip{z-index:20}
-  .modal--notes{width:min(960px,95vw);height:90vh;height:90dvh}
+  .modal--notes{width:min(960px,95vw);height:90vh}   /* hauteur DEFINIE : `dvh` ne s'applique pas partout et la modale se mettait alors a suivre son contenu — differente entre Apercu et Ecrire. Le plafond dynamique reste `max-height:92dvh` sur .modal. */
   .modal--notes .modal-body{padding:0;overflow:hidden;display:flex}
   .modal--notes #note-wrap{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
   .modal--notes .ql-toolbar.ql-snow{flex:none;border:none;border-bottom:1px solid var(--color-border);background:var(--color-surface)}
@@ -1089,14 +1089,20 @@
   /* Le <textarea> n'a pas de hauteur intrinseque : en mode Ecrire la modale se
      tassait sur le contenu (289 px mesures a 375 px de large). On plancher la zone
      d'edition pour qu'elle ait toujours de la place, sans dependre du 90vh. */
-  .nm-body{min-height:min(58vh,460px)}
+  .nm-body{flex:1;min-height:220px}   /* remplit la modale ; le 220 n'est qu'un filet si elle se tassait quand meme */
   .nm-src{height:100%}
   /* ⚠️ 16px et non 14 : sous 16 px, iOS Safari zoome a la mise au point du champ
      (voir BACKLOG.md, chantier « Zoom iOS a la saisie »). 16 est dans l'echelle typo. */
   .nm-src{font-size:16px}
   @media(max-width:640px){
-    .nm-body{min-height:min(52vh,400px)}
     /* barre d'outils : elle s'enroule sur 2 lignes a 375 px, on la resserre */
     .nm-tools{gap:2px}
     .nm-tools button{padding:6px 6px;min-width:26px;font-size:12px}
   }
+  /* La modale de notes doit garder une hauteur DEFINIE, sinon elle suit son contenu
+     et change de taille entre Apercu (long) et Ecrire (court) — ecart de 325 px mesure.
+     ⚠️ `@media(max-width:640px){.modal{height:auto}}` est declaree PLUS BAS que
+     `.modal--notes{height:90vh}` a specificite egale : elle gagnait. D'ou la double
+     classe `.modal.modal--notes`, qui l'emporte par specificite, quel que soit l'ordre. */
+  .modal.modal--notes{height:90vh}
+  @media(max-width:640px){ .modal.modal--notes{height:88dvh} }
