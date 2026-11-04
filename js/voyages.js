@@ -17,6 +17,7 @@
   var DEFAULT_CATS=[{id:"cav",name:"Avion",color:"#0ea5e9"},{id:"clo",name:"Logement",color:"#4f46e5"},{id:"ctr",name:"Transport",color:"#f59e0b"},{id:"cac",name:"Activité",color:"#10b981"}];
   function migrate(s){
     if(s&&!s.categories)s.categories=DEFAULT_CATS.map(function(c){return {id:c.id,name:c.name,color:c.color};});
+    if(s&&Array.isArray(s.categories))s.categories.forEach(function(c){if(c)c.color=safeCol(c.color,"#94a3b8");});
     if(s&&s.trips)s.trips.forEach(function(t){if(!t.emails)t.emails={};if(t.periods)t.periods.sort(function(a,b){var x=a.start||"",y=b.start||"";return x<y?-1:x>y?1:0;});var pids=(t.periods||[]).map(function(p){return p.id;});(t.expenses||[]).forEach(function(e){
       if(e.scope==="individual"){e.scope="custom";e.people=e.person?[e.person]:[];delete e.person;}
       else if(e.scope==="all"){e.scope="sejour";e.periods=pids.slice();if(!e.basis)e.basis="nights";}
@@ -66,7 +67,7 @@
     var list=document.getElementById("trip-list");if(!list)return;
     var main=mainTrips(),arch=archivedTrips(),multi=visibleTrips().length>1;
     function row(t,isA){var active=t.id===store.activeId;
-      return '<button class="dd-trip'+(active?" active":"")+'" data-tripsel="'+t.id+'"><span class="dd-check">'+(active?CHK:'')+'</span><span class="dd-tname">'+esc(t.tripName||"Sans titre")+'</span><span class="dd-link" data-triplink="'+t.id+'" title="Copier le lien">'+LINKIC+'</span><span class="dd-ico" data-trip'+(isA?'unarch':'arch')+'="'+t.id+'" title="'+(isA?'Désarchiver':'Archiver')+'">'+(isA?UNARCH:ARCH)+'</span>'+(multi?'<span class="dd-del" data-tripdel="'+t.id+'" title="Supprimer">×</span>':'')+'</button>';
+      return '<button class="dd-trip'+(active?" active":"")+'" data-tripsel="'+esc(t.id)+'"><span class="dd-check">'+(active?CHK:'')+'</span><span class="dd-tname">'+esc(t.tripName||"Sans titre")+'</span><span class="dd-link" data-triplink="'+esc(t.id)+'" title="Copier le lien">'+LINKIC+'</span><span class="dd-ico" data-trip'+(isA?'unarch':'arch')+'="'+esc(t.id)+'" title="'+(isA?'Désarchiver':'Archiver')+'">'+(isA?UNARCH:ARCH)+'</span>'+(multi?'<span class="dd-del" data-tripdel="'+esc(t.id)+'" title="Supprimer">×</span>':'')+'</button>';
     }
     var html=main.map(function(t){return row(t,false);}).join("")||'<div class="meta" style="padding:8px 10px">Aucun voyage</div>';
     if(arch.length)html+='<div class="dd-div"></div><button class="dd-item" id="arch-toggle" type="button"><span class="dd-ico" style="opacity:1">'+ARCH+'</span> Archivés ('+arch.length+')</button><div id="arch-list" hidden>'+arch.map(function(t){return row(t,true);}).join("")+'</div>';
@@ -97,17 +98,27 @@
   function delTripById(id){if(store.trips.length<=1){toast("Au moins un voyage");return;}if(!confirm("Supprimer ce voyage de l'historique ?"))return;store.trips=store.trips.filter(function(t){return t.id!==id;});if(store.activeId===id)store.activeId=store.trips[0].id;state=activeTrip();save();renderTripSwitch();renderAll();syncHash();hideMenus();toast("Voyage supprimé");}
 
   function defaultColor(name){var h=0;for(var i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0;return palette[h%palette.length];}
-  function color(name){return (state.colors&&state.colors[name])?state.colors[name]:defaultColor(name);}
+  function color(name){return safeCol(state.colors&&state.colors[name],null)||defaultColor(name);}
   function avatar(name){return '<span class="av" data-colperson="'+esc(name)+'" title="Changer la couleur" style="background:'+color(name)+'">'+(name?name[0].toUpperCase():"?")+'</span>';}
   function nights(p){var d=Math.round((Date.parse(p.end)-Date.parse(p.start))/86400000);return d>0?d:0;}
   function days(p){var n=nights(p);if(n<=0)return 0;var base=n+1;for(var i=0;i<state.periods.length;i++){var q=state.periods[i];if(q!==p&&q.end===p.start){base-=1;break;}}return base;}
   var nf=new Intl.NumberFormat("fr-FR",{maximumFractionDigits:2});
   function fmt(n){return nf.format(Math.round(n*100)/100)+" €";}
   function fmtResp(n){return '<span class="amt-full">'+nf.format(Math.round(n*100)/100)+' €</span><span class="amt-round">'+nf.format(Math.round(n))+' €</span>';}
-  function frDate(s,o){var d=new Date(s+"T00:00:00");return isNaN(d)?s:d.toLocaleDateString("fr-FR",o);}
+  function frDate(s,o){var d=new Date(s+"T00:00:00");return isNaN(d)?esc(s==null?"":s):d.toLocaleDateString("fr-FR",o);}
   function durLabel(s,e){var n=Math.round((Date.parse(e)-Date.parse(s))/86400000);n=n>0?n:0;var d=n>0?n+1:0;return n+" nuit"+(n>1?"s":"")+" · "+d+" jour"+(d>1?"s":"");}
   function period(id){for(var i=0;i<state.periods.length;i++)if(state.periods[i].id===id)return state.periods[i];return null;}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+  /* Securite (04/11/2026) : tout compte connecte peut ecrire dans Firestore sans passer par
+     l'appli, donc une donnee lue n'est jamais sure. Deux gardes :
+     - safeCol : une couleur enregistree n'entre dans un style que si c'est un #hex ;
+     - cleanHtml : le HTML saisi (commentaires, notes) passe par DOMPurify avant affichage.
+       Sans DOMPurify (CDN indisponible), on affiche le texte seul, jamais du HTML non filtre. */
+  function safeCol(v,fb){return (typeof v==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(v))?v:fb;}
+  /* target garde l'ouverture des liens Quill dans un nouvel onglet ; <form> et <style> sont
+     refuses (envoi de saisie ailleurs, habillage de toute la page). */
+  var CLEAN_OPTS={FORBID_TAGS:["style","form"],ADD_ATTR:["target"]};
+  function cleanHtml(h){h=(h==null)?"":String(h);if(typeof DOMPurify!=="undefined"&&DOMPurify.sanitize)return DOMPurify.sanitize(h,CLEAN_OPTS);return esc(h.replace(/<[^>]*>/g," "));}
   function basisLabel(b){return b==="days"?"jours":"nuits";}
   function expPeriods(e){if(e.scope==="all")return state.periods.slice();if(e.scope==="sejour"){var ids=e.periods||[];return state.periods.filter(function(p){return ids.indexOf(p.id)>=0;});}var p=period(e.scope);return p?[p]:[];}
   function scopeLabel(e){
@@ -163,7 +174,7 @@
   function renderMatrix(){
     var el=document.getElementById("matrix");
     var cols=state.periods.map(function(p){
-      return '<th class="mx-col" data-pedit="'+p.id+'" title="Modifier la période"><div class="mx-cname">'+esc(p.name)+'</div><div class="mx-cdates">'+frDate(p.start,{day:"2-digit",month:"2-digit"})+' → '+frDate(p.end,{day:"2-digit",month:"2-digit"})+'</div></th>';
+      return '<th class="mx-col" data-pedit="'+esc(p.id)+'" title="Modifier la période"><div class="mx-cname">'+esc(p.name)+'</div><div class="mx-cdates">'+frDate(p.start,{day:"2-digit",month:"2-digit"})+' → '+frDate(p.end,{day:"2-digit",month:"2-digit"})+'</div></th>';
     }).join("");
     var cg='<colgroup><col>'+state.periods.map(function(){return "<col>";}).join("")+'</colgroup>';
     var head='<thead><tr><th class="mx-corner"></th>'+cols+'</tr></thead>';
@@ -171,7 +182,7 @@
       var col=color(n);
       var cells=state.periods.map(function(p){
         var on=p.members.indexOf(n)>=0;
-        return '<td class="mx-cell" data-period="'+p.id+'" data-person="'+esc(n)+'" title="'+esc(n)+' · '+esc(p.name)+'">'+(on
+        return '<td class="mx-cell" data-period="'+esc(p.id)+'" data-person="'+esc(n)+'" title="'+esc(n)+' · '+esc(p.name)+'">'+(on
           ?'<span class="mx-band" style="background:'+rgba(col,0.13)+';color:'+shade(col,0.45)+'"><span class="mx-dot" style="background:'+col+'">'+CHK+'</span><span class="mx-bandtxt">présent</span></span>'
           :'<span class="mx-off"><span class="mx-plus">+</span></span>')+'</td>';
       }).join("");
@@ -224,15 +235,15 @@
     var lab=(e.label&&esc(e.label))||'<span class="exp-noname">Sans libellé</span>';
     var cat=e.category?catById(e.category):null;
     var dot=cat?'<span class="exp-cdot" style="background:'+cat.color+'" title="'+esc(cat.name)+'"></span>':'';
-    return '<div class="exp-item'+(e.reserved?" reserved":"")+'" data-id="'+e.id+'">'
+    return '<div class="exp-item'+(e.reserved?" reserved":"")+'" data-id="'+esc(e.id)+'">'
       +'<div class="exp-row">'
       +'<span class="drag-handle" title="Glisser pour réordonner">⠿</span>'
-      +(function(){var st=e.paid?2:(e.reserved?1:0);var cls=st===2?" paid":(st===1?" res":"");var ico=st===2?"€":(st===1?CHK:"");var ttl=st===0?"À réserver — cliquer pour marquer réservé":(st===1?"Réservé — cliquer pour marquer payé":"Réservé et payé — cliquer pour réinitialiser");return '<button class="exp-state'+cls+'" data-state="'+e.id+'" title="'+ttl+'" aria-label="'+ttl+'">'+ico+'</button>';})()
+      +(function(){var st=e.paid?2:(e.reserved?1:0);var cls=st===2?" paid":(st===1?" res":"");var ico=st===2?"€":(st===1?CHK:"");var ttl=st===0?"À réserver — cliquer pour marquer réservé":(st===1?"Réservé — cliquer pour marquer payé":"Réservé et payé — cliquer pour réinitialiser");return '<button class="exp-state'+cls+'" data-state="'+esc(e.id)+'" title="'+ttl+'" aria-label="'+ttl+'">'+ico+'</button>';})()
       +'<div class="exp-main"><div class="exp-l1">'+lab+'</div>'+expSharesHtml(e)+'</div>'
       +'<div class="exp-r"><div class="exp-r1 num-f">'+dot+fmt(e.amount)+'</div></div>'
-      +'<button class="exp-edit" data-edit="'+e.id+'" title="Modifier">'+PENCIL+'</button>'
+      +'<button class="exp-edit" data-edit="'+esc(e.id)+'" title="Modifier">'+PENCIL+'</button>'
       +'</div>'
-      +(hasC?'<div class="exp-comment">'+ARROW+'<div class="exp-comment-body">'+e.comment+'</div></div>':'')
+      +(hasC?'<div class="exp-comment">'+ARROW+'<div class="exp-comment-body">'+cleanHtml(e.comment)+'</div></div>':'')
       +'</div>';
   }
   function renderExpenses(){
@@ -332,7 +343,7 @@
   function nmRender(){
     var src=document.getElementById("nm-src"),pv=document.getElementById("nm-prev");
     if(!src||!pv)return;
-    if(mdHasRender()){try{pv.innerHTML=marked.parse(src.value,{gfm:true,breaks:true});nmFigures(pv);}catch(e){pv.textContent=src.value;}}
+    if(mdHasRender()){try{pv.innerHTML=cleanHtml(marked.parse(src.value,{gfm:true,breaks:true}));nmFigures(pv);}catch(e){pv.textContent=src.value;}}
     else pv.textContent=src.value;   /* CDN indisponible : on montre au moins le texte */
   }
   /* Une image collee depuis un chat arrive seule dans son <p> : sans traitement elle
@@ -392,7 +403,9 @@
   }
   /* --- HTML -> Markdown : sert a la migration ET au collage --- */
   function htmlToMd(html){
-    var root=document.createElement("div");root.innerHTML=html;
+    /* DOMParser rend un document inerte : ni script, ni chargement d'image, ni onerror.
+       Un div du document courant, lui, executait les onerror du HTML colle ou migre. */
+    var root=new DOMParser().parseFromString(String(html||""),"text/html").body;
     var jetables=root.querySelectorAll("span.ql-ui, style, script");
     for(var i=0;i<jetables.length;i++)jetables[i].parentNode.removeChild(jetables[i]);
     function inline(n){
@@ -582,7 +595,7 @@
   function openColorPop(name,anchor){
     colorTarget=name;
     var cur=color(name).toLowerCase(),pop=document.getElementById("color-pop");
-    pop.innerHTML=palette.map(function(hex){return '<span class="sw'+(cur===hex.toLowerCase()?" active":"")+'" data-sw="'+hex+'" style="background:'+hex+'" title="'+hex+'"></span>';}).join("")+'<button type="button" class="sw sw-cust" data-pcustom title="Couleur personnalisée"></button><input type="color" class="pcolorinput" value="'+cur+'" data-pcolorinput tabindex="-1" style="position:absolute;left:8px;bottom:8px;width:1px;height:1px;opacity:0;pointer-events:none">';
+    pop.innerHTML=palette.map(function(hex){return '<span class="sw'+(cur===hex.toLowerCase()?" active":"")+'" data-sw="'+hex+'" style="background:'+hex+'" title="'+hex+'"></span>';}).join("")+'<button type="button" class="sw sw-cust" data-pcustom title="Couleur personnalisée"></button><input type="color" class="pcolorinput" value="'+esc(cur)+'" data-pcolorinput tabindex="-1" style="position:absolute;left:8px;bottom:8px;width:1px;height:1px;opacity:0;pointer-events:none">';
     pop.hidden=false;
     var r=anchor.getBoundingClientRect(),pw=pop.offsetWidth;
     pop.style.left=Math.max(8,Math.min(r.left,window.innerWidth-pw-8))+"px";
@@ -662,7 +675,7 @@
     modalCtx={type:"period",id:id,isNew:isNew};
     var mem=state.people.length?state.people.map(function(n){var on=p.members.indexOf(n)>=0;return '<div class="mem-item'+(on?" on":"")+'" data-mem="'+esc(n)+'"><span class="chk">'+(on?CHK:'')+'</span><span class="av" style="background:'+color(n)+'">'+esc(n[0].toUpperCase())+'</span>'+esc(n)+'</div>';}).join(""):'<div class="meta">Ajoute d\'abord des personnes.</div>';
     var body='<div class="fld-row"><label>Nom</label><input id="m-name" class="fld" type="text" value="'+esc(p.name)+'"/></div>'
-      +'<div class="fld-row"><label>Dates</label><div class="date-range"><div class="date-field"><span class="date-cap">Début</span><button type="button" id="m-start" class="fld dpick" data-iso="'+p.start+'">'+frDate(p.start,{day:"numeric",month:"short",year:"numeric"})+'</button></div><div class="date-arrow">→</div><div class="date-field"><span class="date-cap">Fin</span><button type="button" id="m-end" class="fld dpick" data-iso="'+p.end+'">'+frDate(p.end,{day:"numeric",month:"short",year:"numeric"})+'</button></div></div><div class="date-dur" id="m-dur">'+durLabel(p.start,p.end)+'</div></div>'
+      +'<div class="fld-row"><label>Dates</label><div class="date-range"><div class="date-field"><span class="date-cap">Début</span><button type="button" id="m-start" class="fld dpick" data-iso="'+esc(p.start)+'">'+frDate(p.start,{day:"numeric",month:"short",year:"numeric"})+'</button></div><div class="date-arrow">→</div><div class="date-field"><span class="date-cap">Fin</span><button type="button" id="m-end" class="fld dpick" data-iso="'+esc(p.end)+'">'+frDate(p.end,{day:"numeric",month:"short",year:"numeric"})+'</button></div></div><div class="date-dur" id="m-dur">'+durLabel(p.start,p.end)+'</div></div>'
       +'<div class="fld-row"><label>Présents</label><div class="mem-list" id="m-members">'+mem+'</div></div>';
     openModal(isNew?"Nouvelle période":"Modifier la période",body,!isNew);
   }
@@ -681,7 +694,7 @@
     var cur=isNew?(palette.filter(function(h){return used.indexOf(h.toLowerCase())<0;})[0]||palette[0]):color(name);
     modalCtx={type:"person",name:name,isNew:isNew,col:cur};
     var isCustom=palette.map(function(h){return h.toLowerCase();}).indexOf(cur.toLowerCase())<0;
-    var sws=palette.map(function(hex){return '<span class="sw'+(cur.toLowerCase()===hex.toLowerCase()?" active":"")+'" data-msw="'+hex+'" style="background:'+hex+'"></span>';}).join("")+'<button type="button" class="sw sw-cust'+(isCustom?" active":"")+'" data-mcustom title="Couleur personnalisée"></button><input type="color" class="m-colorinput" value="'+cur+'" data-mcolorinput tabindex="-1" style="position:absolute;left:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none">';
+    var sws=palette.map(function(hex){return '<span class="sw'+(cur.toLowerCase()===hex.toLowerCase()?" active":"")+'" data-msw="'+hex+'" style="background:'+hex+'"></span>';}).join("")+'<button type="button" class="sw sw-cust'+(isCustom?" active":"")+'" data-mcustom title="Couleur personnalisée"></button><input type="color" class="m-colorinput" value="'+esc(cur)+'" data-mcolorinput tabindex="-1" style="position:absolute;left:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none">';
     var curMail=isNew?"":((state.emails&&state.emails[name])||"");
     var body='<div class="fld-row"><label>Nom</label><input id="m-pname" class="fld" type="text" value="'+(isNew?"":esc(name))+'" placeholder="Nom"/></div>'
       +'<div class="fld-row"><label>Couleur</label><div class="sw-row" id="m-colors" style="position:relative">'+sws+'</div></div>'
@@ -744,11 +757,11 @@
     var selPeople=(ex&&ex.scope==="custom"&&ex.people&&ex.people.length)?ex.people:state.people.slice();
     var basis=(ex&&ex.basis)?ex.basis:"nights";
     modalCtx={type:"expense",id:id||null};
-    var periodsItems=state.periods.length?state.periods.map(function(p){var on=selPeriods.indexOf(p.id)>=0;return '<div class="mem-item'+(on?" on":"")+'" data-mem="'+p.id+'"><span class="chk">'+(on?CHK:'')+'</span><span class="mem-pname">'+esc(p.name)+'</span><span class="mem-pdates">'+frDate(p.start,{day:"2-digit",month:"2-digit"})+' → '+frDate(p.end,{day:"2-digit",month:"2-digit"})+'</span></div>';}).join(""):'<div class="meta">Ajoute d\'abord des périodes.</div>';
+    var periodsItems=state.periods.length?state.periods.map(function(p){var on=selPeriods.indexOf(p.id)>=0;return '<div class="mem-item'+(on?" on":"")+'" data-mem="'+esc(p.id)+'"><span class="chk">'+(on?CHK:'')+'</span><span class="mem-pname">'+esc(p.name)+'</span><span class="mem-pdates">'+frDate(p.start,{day:"2-digit",month:"2-digit"})+' → '+frDate(p.end,{day:"2-digit",month:"2-digit"})+'</span></div>';}).join(""):'<div class="meta">Ajoute d\'abord des périodes.</div>';
     var peopleItems=state.people.map(function(n){var on=selPeople.indexOf(n)>=0;return '<div class="mem-item'+(on?" on":"")+'" data-mem="'+esc(n)+'"><span class="chk">'+(on?CHK:'')+'</span><span class="av" style="background:'+color(n)+'">'+esc(n[0].toUpperCase())+'</span>'+esc(n)+'</div>';}).join("");
     var body='<div class="fld-row"><label>Libellé</label><input id="m-exlabel" class="fld" type="text" placeholder="Libellé" value="'+(ex?esc(ex.label||""):"")+'"/></div>'
-      +'<div class="fld-row"><label>Montant</label><input id="m-examount" class="fld" type="number" min="0" step="0.01" placeholder="€" value="'+(ex?ex.amount:"")+'"/></div>'
-      +'<div class="fld-row"><label>Catégorie</label><div class="catpicks" id="m-excat">'+(store.categories||[]).map(function(c){var on=ex&&ex.category===c.id;return '<span class="catpick'+(on?" on":"")+'" data-catpick="'+c.id+'" style="--c:'+c.color+'">'+esc(c.name)+'</span>';}).join("")+'</div></div>'
+      +'<div class="fld-row"><label>Montant</label><input id="m-examount" class="fld" type="number" min="0" step="0.01" placeholder="€" value="'+(ex?esc(ex.amount):"")+'"/></div>'
+      +'<div class="fld-row"><label>Catégorie</label><div class="catpicks" id="m-excat">'+(store.categories||[]).map(function(c){var on=ex&&ex.category===c.id;return '<span class="catpick'+(on?" on":"")+'" data-catpick="'+esc(c.id)+'" style="--c:'+esc(c.color)+'">'+esc(c.name)+'</span>';}).join("")+'</div></div>'
       +'<div class="fld-row"><label>Répartition</label><div class="catpicks" id="m-exscope-pick"><span class="catpick scope'+(sc==="sejour"?" on":"")+'" data-scopepick="sejour">Séjour</span><span class="catpick scope'+(sc==="custom"?" on":"")+'" data-scopepick="custom">Personnes</span></div></div>'
       +'<div class="fld-row" id="m-experiods-row"><label>Périodes</label><div class="mem-list" id="m-experiods">'+periodsItems+'</div></div>'
       +'<div class="fld-row" id="m-exbasis-row"><label>Base de calcul</label><select id="m-exbasis" class="fld">'+optBasis(basis)+'</select></div>'
@@ -758,7 +771,7 @@
     cmtQuill=null;
     openModal(isNew?"Nouvelle dépense":"Modifier la dépense",body,!isNew);
     updateExpenseModal();
-    if(hasQuill()){cmtQuill=new Quill("#m-cmt-editor",{theme:"snow",bounds:document.getElementById("modal"),placeholder:"Lien, adresse, planning…",modules:{toolbar:QTOOL}});cmtQuill.root.innerHTML=(ex&&ex.comment)||"";}
+    if(hasQuill()){cmtQuill=new Quill("#m-cmt-editor",{theme:"snow",bounds:document.getElementById("modal"),placeholder:"Lien, adresse, planning…",modules:{toolbar:QTOOL}});cmtQuill.root.innerHTML=cleanHtml((ex&&ex.comment)||"");}
   }
   function rtEditor(id,ph,minH,html){
     var rtCols=["#0f172a","#4f46e5","#0ea5e9","#10b981","#f43f5e","#8b5cf6"];
@@ -777,9 +790,9 @@
       +'<button type="button" class="rt-btn" data-cmd="unlink" title="Retirer le lien"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 15l6-6M10 14l-1 1a3.5 3.5 0 0 1-5-5l1-1M14 10l1-1a3.5 3.5 0 0 1 5 5l-1 1M4 4l16 16"/></svg></button>'
       +'<button type="button" class="rt-btn" data-cmd="removeFormat" title="Effacer la mise en forme"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 5h12M9 5l-2 14M13 5l-1 7M5 19h7"/></svg></button>'
       +'<span class="rt-sep"></span>'+sw
-      +'</div><div id="'+id+'" class="rt-area" contenteditable="true" data-ph="'+esc(ph)+'" style="min-height:'+minH+'px">'+(html||"")+'</div></div>';
+      +'</div><div id="'+id+'" class="rt-area" contenteditable="true" data-ph="'+esc(ph)+'" style="min-height:'+minH+'px">'+cleanHtml(html||"")+'</div></div>';
   }
-  function openCommentModal(id){var ex=expById(id);if(!ex)return;modalCtx={type:"comment",id:id};cmtQuill=null;var body='<div class="fld-row"><label>Commentaire — '+esc(ex.label)+'</label>'+(hasQuill()?'<div id="m-cmt-editor"></div>':rtEditor("m-cmt","Lien, adresse, référence…",110,ex.comment||""))+'</div>';openModal("Commentaire",body,false);if(hasQuill()){cmtQuill=new Quill("#m-cmt-editor",{theme:"snow",bounds:document.getElementById("modal"),placeholder:"Lien, adresse, référence…",modules:{toolbar:QTOOL}});cmtQuill.root.innerHTML=ex.comment||"";}}
+  function openCommentModal(id){var ex=expById(id);if(!ex)return;modalCtx={type:"comment",id:id};cmtQuill=null;var body='<div class="fld-row"><label>Commentaire — '+esc(ex.label)+'</label>'+(hasQuill()?'<div id="m-cmt-editor"></div>':rtEditor("m-cmt","Lien, adresse, référence…",110,ex.comment||""))+'</div>';openModal("Commentaire",body,false);if(hasQuill()){cmtQuill=new Quill("#m-cmt-editor",{theme:"snow",bounds:document.getElementById("modal"),placeholder:"Lien, adresse, référence…",modules:{toolbar:QTOOL}});cmtQuill.root.innerHTML=cleanHtml(ex.comment||"");}}
   function saveCommentModal(){var ex=expById(modalCtx.id);if(ex){ex.comment=cmtQuill?cmtQuill.root.innerHTML:(document.getElementById("m-cmt")?document.getElementById("m-cmt").innerHTML:"");save();renderExpenses();}cmtQuill=null;closeModal();}
   function saveExpenseModal(){
     var lab=(document.getElementById("m-exlabel").value||"").trim(),amt=parseFloat(document.getElementById("m-examount").value);
@@ -797,9 +810,9 @@
     save();renderExpenses();renderParts();closeModal();
   }
   function settingsCatsHtml(){return (store.categories||[]).map(function(c,i){
-    var sws=palette.map(function(h){return '<span class="csw'+(c.color.toLowerCase()===h.toLowerCase()?" active":"")+'" data-catsw="'+h+'" data-catid="'+c.id+'" style="background:'+h+'"></span>';}).join("");
-    sws+='<button type="button" class="csw cat-cust" data-catcustom="'+c.id+'" title="Couleur personnalisée"></button><input type="color" class="cat-custinput" value="'+c.color+'" data-catcolinput="'+c.id+'" tabindex="-1">';
-    return '<div class="cat-item" data-catdrag data-catid="'+c.id+'" data-idx="'+i+'"><div class="cat-top"><span class="cat-grip" title="Glisser pour réordonner">⠿</span><button type="button" class="cat-dot" data-cattoggle="'+c.id+'" style="background:'+c.color+'" title="Couleur"></button><input type="text" class="cat-name" data-catid="'+c.id+'" value="'+esc(c.name)+'"/><button class="row-action" data-catdel="'+c.id+'" title="Supprimer">×</button></div><div class="cat-sws" hidden>'+sws+'</div></div>';
+    var sws=palette.map(function(h){return '<span class="csw'+(c.color.toLowerCase()===h.toLowerCase()?" active":"")+'" data-catsw="'+h+'" data-catid="'+esc(c.id)+'" style="background:'+h+'"></span>';}).join("");
+    sws+='<button type="button" class="csw cat-cust" data-catcustom="'+esc(c.id)+'" title="Couleur personnalisée"></button><input type="color" class="cat-custinput" value="'+esc(c.color)+'" data-catcolinput="'+esc(c.id)+'" tabindex="-1">';
+    return '<div class="cat-item" data-catdrag data-catid="'+esc(c.id)+'" data-idx="'+i+'"><div class="cat-top"><span class="cat-grip" title="Glisser pour réordonner">⠿</span><button type="button" class="cat-dot" data-cattoggle="'+esc(c.id)+'" style="background:'+esc(c.color)+'" title="Couleur"></button><input type="text" class="cat-name" data-catid="'+esc(c.id)+'" value="'+esc(c.name)+'"/><button class="row-action" data-catdel="'+esc(c.id)+'" title="Supprimer">×</button></div><div class="cat-sws" hidden>'+sws+'</div></div>';
   }).join("");}
   function openSettingsModal(){
     modalCtx={type:"settings"};
@@ -995,7 +1008,7 @@
     var x=e.target.closest("[data-exp]");
     if(x){var ex=expById(x.dataset.exp);if(!ex)return;var f=x.dataset.field;
       if(f==="label"){ex.label=e.target.value;save();renderParts();return;}
-      if(f==="amount"){ex.amount=parseFloat(e.target.value)||0;save();renderParts();var pc=document.querySelector('.exp-item[data-id="'+ex.id+'"] .exp-part');if(pc)pc.outerHTML=expPart(ex);return;}
+      if(f==="amount"){ex.amount=parseFloat(e.target.value)||0;save();renderParts();var pc=document.querySelector('.exp-item[data-id="'+esc(ex.id)+'"] .exp-part');if(pc)pc.outerHTML=expPart(ex);return;}
       return;}
     var n=e.target.closest("[data-name]");
     if(n){var p=period(n.dataset.name);p.name=e.target.value;save();renderParts();return;}

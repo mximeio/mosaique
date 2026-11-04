@@ -43,6 +43,9 @@ Routines de soins, une par personne :
   « Aperçu / Écrire », barre d'outils, et conversion automatique du contenu collé depuis
   n'importe quelle page web.
 - **Éditeur de texte riche** : [Quill](https://quilljs.com/) (commentaires de dépense).
+- **Sécurité** : tout contenu enregistré est échappé ou filtré par
+  [DOMPurify](https://github.com/cure53/DOMPurify) avant affichage ; politique de sécurité du
+  contenu (CSP) dans `index.html` ; bibliothèques du CDN vérifiées par empreinte (SRI).
 - **PWA** : installable (manifest + icônes), plein écran sur mobile.
 - **Hébergement** : GitHub Pages.
 

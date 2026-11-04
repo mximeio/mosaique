@@ -33,7 +33,7 @@
     if(!c.types||!c.types.length)c.types=CG_DEFTYPES.map(function(t){return{c:t.c,col:t.col,impute:!!t.impute};});
     if(!c.balances)c.balances=[];
     var findT=function(code){for(var i=0;i<c.types.length;i++)if(c.types[i].c===code)return c.types[i];return null;};
-    c.types.forEach(function(t){if(t.impute===undefined)t.impute=(t.c==="PREV");});
+    c.types.forEach(function(t){if(t.impute===undefined)t.impute=(t.c==="PREV");t.col=safeCol(t.col,"#cbd5e1");});
     var tc={};c.types.forEach(function(t){tc[t.c]=1;});
     Object.keys(c.grid).forEach(function(k){if(tc[c.grid[k]])c.grid[k]="t:"+c.grid[k];});
     c.balances.slice().forEach(function(b){if(b.src){var tt=findT(b.type);if(tt)tt.impute=true;Object.keys(c.grid).forEach(function(k){if(c.grid[k]===b.id)c.grid[k]="i:"+b.type+":"+b.src;});c.balances=c.balances.filter(function(x){return x.id!==b.id;});}});
@@ -211,7 +211,7 @@
     if(hE)hE.textContent="Vacances — "+vs.length;
     if(!vs.length){el.innerHTML='<div class="cg-empty">Aucune vacances. Sélectionne « + Vacances » puis peins une période sur le calendrier.</div>';return;}
     el.innerHTML=vs.map(function(v){var tot=Math.round((new Date(v.e.y,v.e.m,v.e.d)-new Date(v.s.y,v.s.m,v.s.d))/86400000)+1,rng=v.s.d+" "+CG_MN[v.s.m]+" → "+v.e.d+" "+CG_MN[v.e.m];
-      return '<div class="cg-per-row"><span class="cg-per-rng">'+rng+'</span><span class="cg-per-meta">'+tot+' j</span><input class="cg-per-lbl" data-cg-vid="'+v.id+'" placeholder="Où / quoi ?" value="'+esc(v.label||"")+'"'+(congesReadOnly?" disabled":"")+'/>'+(congesReadOnly?'':'<button type="button" class="row-action cg-per-del" data-cg-vdel="'+v.id+'" title="Supprimer">×</button>')+'</div>';
+      return '<div class="cg-per-row"><span class="cg-per-rng">'+rng+'</span><span class="cg-per-meta">'+tot+' j</span><input class="cg-per-lbl" data-cg-vid="'+esc(v.id)+'" placeholder="Où / quoi ?" value="'+esc(v.label||"")+'"'+(congesReadOnly?" disabled":"")+'/>'+(congesReadOnly?'':'<button type="button" class="row-action cg-per-del" data-cg-vdel="'+esc(v.id)+'" title="Supprimer">×</button>')+'</div>';
     }).join("");
   }
   function renderCongesSol(){
@@ -237,9 +237,9 @@
           +(posePct>0?'<i class="cg-solbar-fut" style="width:'+posePct+'%;background:'+col+'"></i>':'')
           +(prevPct>0?'<i style="width:'+prevPct+'%;background:repeating-linear-gradient(-45deg,'+col+' 0 3px,#ffffff 3px 6px)"></i>':'')+'</span>';
         var val='<span class="cg-solv"><b'+(restant<0?' style="color:#e11d48"':'')+'>'+cgFmtDays(restant)+'</b> / '+cgFmtDays(b.days)+' j</span>';
-        return '<div class="cg-solr" data-cg-solid="'+b.id+'">'+lbl+bar+val+'</div>';
+        return '<div class="cg-solr" data-cg-solid="'+esc(b.id)+'">'+lbl+bar+val+'</div>';
       }
-      return '<div class="cg-solr cg-solr-none" data-cg-solid="'+b.id+'">'+lbl+'<span></span><span class="cg-solv"><small>posé </small><b>'+cgFmtDays(real)+'</b></span></div>';
+      return '<div class="cg-solr cg-solr-none" data-cg-solid="'+esc(b.id)+'">'+lbl+'<span></span><span class="cg-solv"><small>posé </small><b>'+cgFmtDays(real)+'</b></span></div>';
     }).join("");
     var oth=[];
     c.types.forEach(function(t){var n=scY.byRaw["t:"+t.c]||0;if(!n&&!(scY.tPrev[t.c]>0))return;
@@ -265,7 +265,7 @@
       var trs=tabRows.map(function(r){
         var aposer=r.total-r.pris-r.pose,apres=aposer-r.prev;
         tot.total+=r.total;tot.pris+=r.pris;tot.pose+=r.pose;tot.prev+=r.prev;tot.aposer+=aposer;tot.apres+=apres;
-        return '<tr><td class="l"><i class="cg-soldot" style="background:'+r.col+'"></i><b>'+esc(r.name)+(r.per?' '+esc(r.per):'')+'</b></td>'
+        return '<tr><td class="l"><i class="cg-soldot" style="background:'+esc(r.col)+'"></i><b>'+esc(r.name)+(r.per?' '+esc(r.per):'')+'</b></td>'
           +'<td>'+cgFmtDays(r.total)+'</td>'
           +'<td class="c-pris">'+dash(r.pris)+'</td><td class="c-pose">'+dash(r.pose)+'</td><td class="c-util">'+dash(r.pris+r.pose)+'</td>'
           +'<td class="hl"><span class="cg-apchip">'+cgFmtDays(aposer)+'</span></td>'
@@ -322,13 +322,13 @@
     function popover(b){
       return '<div class="cgs2-pop">'
         +'<div class="cgs2-pop-hd"><span>'+esc(cgShortPeriod(b.period)||b.period||"Période")+'</span><button type="button" class="cgs2-pop-x" data-cgp-close="1">×</button></div>'
-        +'<div class="cgs2-step"><button type="button" class="cgs2-step-b" data-cgp-dec="'+b.id+'">−</button><input type="number" min="0" step="0.5" class="cgs2-step-in" value="'+cgFmtDays(b.days)+'" data-cgp-days="'+b.id+'"><span class="cgs2-step-u">j</span><button type="button" class="cgs2-step-b" data-cgp-inc="'+b.id+'">+</button></div>'
+        +'<div class="cgs2-step"><button type="button" class="cgs2-step-b" data-cgp-dec="'+esc(b.id)+'">−</button><input type="number" min="0" step="0.5" class="cgs2-step-in" value="'+cgFmtDays(b.days)+'" data-cgp-days="'+esc(b.id)+'"><span class="cgs2-step-u">j</span><button type="button" class="cgs2-step-b" data-cgp-inc="'+esc(b.id)+'">+</button></div>'
         +'<div class="cgs2-pop-hint">± 1 j, ou saisis une valeur (0,5)</div>'
-        +'<div class="cgs2-pop-act"><button type="button" class="btn cgs2-pop-arch" data-cgp-arch="'+b.id+'">'+CG_ARCH_ICO+' Archiver</button></div>'
+        +'<div class="cgs2-pop-act"><button type="button" class="btn cgs2-pop-arch" data-cgp-arch="'+esc(b.id)+'">'+CG_ARCH_ICO+' Archiver</button></div>'
         +'</div>';
     }
     function chip(b){var open=(cgSetPop===b.id);
-      return '<span class="cgs2-chipwrap"><span class="cgs2-chip'+(open?" open":"")+'" data-cgp-open="'+b.id+'"><span class="cgs2-chip-lbl">'+esc(cgShortPeriod(b.period)||b.period||"—")+'</span><span class="cgs2-chip-d">'+cgFmtDays(b.days)+' j</span></span>'+(open?popover(b):'')+'</span>';
+      return '<span class="cgs2-chipwrap"><span class="cgs2-chip'+(open?" open":"")+'" data-cgp-open="'+esc(b.id)+'"><span class="cgs2-chip-lbl">'+esc(cgShortPeriod(b.period)||b.period||"—")+'</span><span class="cgs2-chip-d">'+cgFmtDays(b.days)+' j</span></span>'+(open?popover(b):'')+'</span>';
     }
     function compteRow(t){var bs=c.balances.filter(function(b){return b.type===t.c&&!b.archived;});
       var chips=bs.map(chip).join("")+'<span class="cgs2-add" data-cgp-add="'+esc(t.c)+'">+ '+esc(cgShortPeriod(cgNextPeriod(t.c)))+'</span>';
@@ -349,7 +349,7 @@
       +'<h3 class="set-grp">Données</h3>'
       +'<div class="set-card"><p class="set-desc">Sauvegarde complète de tes congés. L\'import remplace toutes les données.</p><div class="set-data"><button type="button" class="btn sm" data-cg-import><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 8l5-5 5 5M12 3v12"/></svg>Importer</button><button type="button" class="btn sm" data-cg-export><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Exporter</button></div></div>';
     if(cgArchOpen){
-      var arows=archived.map(function(a){var b=a.b;return '<div class="cgs2-arow"><span class="cgs2-adot" style="background:'+a.col+'"></span><span class="cgs2-aname">'+esc(b.type)+'</span><span class="cgs2-aper">'+esc(cgShortPeriod(b.period)||b.period||"")+'</span><span class="cgs2-adays">'+cgFmtDays(b.days)+' j</span><button type="button" class="btn cgs2-arestore" data-cgp-restore="'+b.id+'">'+CG_UNARCH_ICO+' Restaurer</button><button type="button" class="cgs2-x" data-cgp-del="'+b.id+'" title="Supprimer">×</button></div>';}).join("");
+      var arows=archived.map(function(a){var b=a.b;return '<div class="cgs2-arow"><span class="cgs2-adot" style="background:'+esc(a.col)+'"></span><span class="cgs2-aname">'+esc(b.type)+'</span><span class="cgs2-aper">'+esc(cgShortPeriod(b.period)||b.period||"")+'</span><span class="cgs2-adays">'+cgFmtDays(b.days)+' j</span><button type="button" class="btn cgs2-arestore" data-cgp-restore="'+esc(b.id)+'">'+CG_UNARCH_ICO+' Restaurer</button><button type="button" class="cgs2-x" data-cgp-del="'+esc(b.id)+'" title="Supprimer">×</button></div>';}).join("");
       html+='<div class="cgs2-ov"><div class="cgs2-ovbox"><div class="cgs2-ovhd"><span>Archivés</span><button type="button" class="cgs2-pop-x" data-cg-arch-close="1">×</button></div><div class="cgs2-ovbody">'+(arows||'<div class="cgs2-drop-empty">Aucune période archivée.</div>')+'<div class="cgs2-foot" style="margin-top:10px">Une période archivée ne compte plus, mais son historique est conservé.</div></div></div></div>';
     }
     el.innerHTML=html;
@@ -466,7 +466,7 @@
   function cgAskCompte(code,cb){
     var c=ensureConges(),comptes=c.balances.filter(function(b){return !b.archived&&!typeImpute(b.type);});
     var sans=c.types.filter(function(t){return !t.impute&&!c.balances.some(function(b){return !b.archived&&b.type===t.c;});});
-    var body='<div class="cg-choose">'+comptes.map(function(b){var t=cgType(b.type);return '<button type="button" class="cg-choose-b" data-compte="'+b.id+'"><span class="dot" style="background:'+(t?t.col:"#cbd5e1")+'"></span>'+esc(cgCatLabel(b))+'</button>';}).join("")
+    var body='<div class="cg-choose">'+comptes.map(function(b){var t=cgType(b.type);return '<button type="button" class="cg-choose-b" data-compte="'+esc(b.id)+'"><span class="dot" style="background:'+(t?t.col:"#cbd5e1")+'"></span>'+esc(cgCatLabel(b))+'</button>';}).join("")
       +sans.map(function(t){return '<button type="button" class="cg-choose-b" data-compte="t:'+esc(t.c)+'"><span class="dot" style="background:'+esc(t.col||"#cbd5e1")+'"></span>'+esc(t.c)+'</button>';}).join("")
       +'<button type="button" class="cg-choose-b cg-choose-none" data-compte="__none"><span class="cg-nc-ico">×</span>Sans compte (prévisionnel libre)</button></div>';
     modalCtx={type:"prevChoose"};
