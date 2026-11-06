@@ -7,7 +7,9 @@
   var congesYear=(new Date()).getFullYear(),congesActive="CP",congesDrag=false,congesPaintVal=null,congesReadOnly=false;
   var cgJFCur=null,cgVacCur=null,CG_VACCOL="#c084fc",congesAsOf="",congesAnchor=null,congesLast=null,cgPrevCells=[],cgDrag=null,cgSetPop=null,cgArchOpen=false,cgVacByDay={},cgTipHideTimer=null,cgTipVac=null,congesVacView=false,congesEditMode=false,cgSolTips={},cgVacTapAnchor=null,cgSolView=(function(){try{return localStorage.getItem("cg-sol-view")||"bars";}catch(e){return "bars";}})();
   var CONGES_KEY="conges-store-v1",congesData=null,congesTimer=null,congesLastJson=null,congesUnsub=null,congesPendingRemote=null;
-  function saveConges(){if(congesReadOnly||!congesData)return;var j=JSON.stringify(congesData);try{localStorage.setItem(CONGES_KEY,j);}catch(e){}if(CLOUD&&fbUser&&db){clearTimeout(congesTimer);congesTimer=setTimeout(function(){congesLastJson=j;try{db.collection("conges").doc(SHARED).set({json:j});}catch(e){}},700);}}
+  /* Meme garde que save() (core.js) : rien vers Firestore avant d'avoir recu le document. */
+  var congesCloudReady=false,congesOfflineDirty=false;
+  function saveConges(){if(congesReadOnly||!congesData)return;var j=JSON.stringify(congesData);try{localStorage.setItem(CONGES_KEY,j);}catch(e){}if(CLOUD&&fbUser&&db){if(!congesCloudReady){congesOfflineDirty=true;return;}clearTimeout(congesTimer);congesTimer=setTimeout(function(){congesLastJson=j;try{db.collection("conges").doc(SHARED).set({json:j});}catch(e){}},700);}}
   function loadCongesLocal(){try{var s=JSON.parse(localStorage.getItem(CONGES_KEY));if(s&&typeof s==="object")return s;}catch(e){}return null;}
   function applyCongesRemote(json){var s;try{s=JSON.parse(json);}catch(e){return;}if(!s)return;congesData=s;ensureConges();congesLastJson=json;try{localStorage.setItem(CONGES_KEY,json);}catch(e){}renderConges();}
   function onCongesRemote(json){if(json==null||json===congesLastJson)return;if(congesDrag||isEditing()){congesPendingRemote=json;return;}applyCongesRemote(json);}
@@ -18,9 +20,15 @@
       var s=null;if(snap.exists){var d=snap.data();if(d&&d.json){try{s=JSON.parse(d.json);}catch(e){}}}
       var hasData=s&&s.grid&&Object.keys(s.grid).length;
       if(!hasData&&legacy&&legacy.grid&&Object.keys(legacy.grid).length)s=legacy;
+      var pushLocal=false;
+      if(congesOfflineDirty&&congesData&&!congesReadOnly){
+        if(confirm(OFFLINE_ASK.replace("modifications","modifications de congés"))){s=JSON.parse(JSON.stringify(congesData));pushLocal=true;}
+        congesOfflineDirty=false;
+      }
       congesData=s||{};ensureConges();congesLastJson=JSON.stringify(congesData);
+      congesCloudReady=true;
       try{localStorage.setItem(CONGES_KEY,congesLastJson);}catch(e){}
-      if(!snap.exists){try{ref.set({json:congesLastJson});}catch(e){}}
+      if(!snap.exists||pushLocal){try{ref.set({json:congesLastJson});}catch(e){}}
       renderConges();
       if(congesUnsub)congesUnsub();
       congesUnsub=ref.onSnapshot(function(sn){if(sn.metadata.hasPendingWrites)return;var dd=sn.data();if(dd&&dd.json)onCongesRemote(dd.json);});
@@ -204,15 +212,6 @@
         }
       });
     });
-  }
-  function renderCongesPer(){
-    var el=document.getElementById("cg-per");if(!el)return;var c=ensureConges(),hE=document.getElementById("cg-perH");
-    var vs=(c.vacs||[]).filter(function(v){return v.s.y===congesYear||v.e.y===congesYear;}).sort(function(a,b){return new Date(a.s.y,a.s.m,a.s.d)-new Date(b.s.y,b.s.m,b.s.d);});
-    if(hE)hE.textContent="Vacances — "+vs.length;
-    if(!vs.length){el.innerHTML='<div class="cg-empty">Aucune vacances. Sélectionne « + Vacances » puis peins une période sur le calendrier.</div>';return;}
-    el.innerHTML=vs.map(function(v){var tot=Math.round((new Date(v.e.y,v.e.m,v.e.d)-new Date(v.s.y,v.s.m,v.s.d))/86400000)+1,rng=v.s.d+" "+CG_MN[v.s.m]+" → "+v.e.d+" "+CG_MN[v.e.m];
-      return '<div class="cg-per-row"><span class="cg-per-rng">'+rng+'</span><span class="cg-per-meta">'+tot+' j</span><input class="cg-per-lbl" data-cg-vid="'+esc(v.id)+'" placeholder="Où / quoi ?" value="'+esc(v.label||"")+'"'+(congesReadOnly?" disabled":"")+'/>'+(congesReadOnly?'':'<button type="button" class="row-action cg-per-del" data-cg-vdel="'+esc(v.id)+'" title="Supprimer">×</button>')+'</div>';
-    }).join("");
   }
   function renderCongesSol(){
     var el=document.getElementById("cg-sol");if(!el)return;var c=ensureConges();
@@ -534,20 +533,42 @@
   function applyRemote(json){if(json==null||json===lastJson)return;var s;try{s=JSON.parse(json);}catch(e){return;}if(!s||!s.trips)return;lastJson=json;store=migrate(s);if(!store.activeId||!store.trips.some(function(t){return t.id===store.activeId;}))store.activeId=(store.trips[0]||{}).id;try{localStorage.setItem(STORE_KEY,json);}catch(e){}state=activeTrip();safeRender();}
   function onRemote(json){if(json==null)return;if(isEditing()){pendingRemote=json;return;}applyRemote(json);}
   document.addEventListener("focusout",function(){setTimeout(function(){if(pendingRemote!=null&&!isEditing()){var j=pendingRemote;pendingRemote=null;applyRemote(j);}if(congesPendingRemote!=null&&!isEditing()&&!congesDrag){var cj=congesPendingRemote;congesPendingRemote=null;applyCongesRemote(cj);}},150);});
+  /* Modifications faites avant la reponse du serveur : on demande, on n'ecrase jamais en silence. */
+  var OFFLINE_ASK="Des modifications faites hors connexion n'ont pas été envoyées.\n\nOK : les envoyer. Elles remplacent la version partagée, pour tout le monde.\nAnnuler : les abandonner et reprendre la version partagée.";
+  function scheduleCloudRetry(){
+    if(cloudRetry)return;
+    var go=function(){window.removeEventListener("online",go);clearTimeout(cloudRetry);cloudRetry=null;if(fbUser&&!cloudReady)loadCloud();};
+    window.addEventListener("online",go);cloudRetry=setTimeout(go,30000);
+  }
   function loadCloud(){
     var ref=db.collection("budgets").doc(SHARED);
     setTimeout(hideBoot,5000);
+    /* Deux fonctions a then() et non then().catch() : une erreur APRES le chargement (rendu,
+       routage) ne doit pas faire basculer sur la copie locale comme si le serveur etait muet. */
     ref.get().then(function(snap){
       var s=null;if(snap.exists){var d=snap.data();if(d&&d.json){try{s=JSON.parse(d.json);}catch(e){}}}
+      if(offlineDirty&&store&&store.trips&&store.trips.length){
+        if(confirm(OFFLINE_ASK))s=JSON.parse(JSON.stringify(store));
+        offlineDirty=false;
+      }
       if(!s||!s.trips||!s.trips.length)s=loadStore();
       store=migrate(s);if(!store.activeId||!store.trips.some(function(t){return t.id===store.activeId;}))store.activeId=store.trips[0].id;
       var congesLegacy=store.conges;if(congesLegacy)delete store.conges;
       lastJson=JSON.stringify(store);
-      state=activeTrip();safeRender();hideBoot();bootRoute();
+      cloudReady=true;cloudFailed=false;
+      try{localStorage.setItem(STORE_KEY,lastJson);}catch(e){}
+      state=activeTrip();safeRender();hideBoot();
+      try{bootRoute();}catch(e){}
       try{ref.set({json:lastJson});}catch(e){}
       if(unsub)unsub();
       unsub=ref.onSnapshot(function(sn){if(sn.metadata.hasPendingWrites)return;var dd=sn.data();if(dd&&dd.json)onRemote(dd.json);});
       loadConges(congesLegacy);loadSkincare();
-    }).catch(function(){store=loadStore();var lg=store.conges;if(lg)delete store.conges;state=activeTrip();safeRender();hideBoot();bootRoute();loadConges(lg);loadSkincare();});
+    },function(){
+      scheduleCloudRetry();
+      if(cloudFailed)return;
+      cloudFailed=true;
+      store=loadStore();var lg=store.conges;if(lg)delete store.conges;state=activeTrip();safeRender();hideBoot();bootRoute();loadConges(lg);loadSkincare();
+      toast("Hors connexion : tes modifications restent sur cet appareil.");
+    });
   }
   

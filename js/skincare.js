@@ -57,7 +57,7 @@
     ensureSkin();
     var r=skinRoutine();
     var LOCK='<span class="sk-lock" title="Lecture seule"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>';
-    if(sel)sel.innerHTML=skinData.routines.map(function(x){var lk=!skinEditable(x);return '<button type="button" class="sk-pchip'+(x.id===skinActive?" on":"")+'" data-sk-per="'+esc(x.id)+'"><span class="sk-av" style="background:'+esc(x.color||"#818cf8")+'">'+esc((x.name||"?")[0].toUpperCase())+'</span>'+esc(x.name||"Routine")+(lk?LOCK:'')+'</button>';}).join("");
+    if(sel)sel.innerHTML=skinData.routines.map(function(x){var lk=!skinEditable(x);return '<button type="button" class="sk-pchip'+(x.id===skinActive?" on":"")+'" data-sk-per="'+esc(x.id)+'"><span class="sk-av" style="background:'+safeCol(x.color,"#818cf8")+'">'+esc((x.name||"?")[0].toUpperCase())+'</span>'+esc(x.name||"Routine")+(lk?LOCK:'')+'</button>';}).join("");
     skinReadOnly=!skinEditable(r);
     if(title)title.innerHTML=r?("Skincare — "+esc(r.name)+(skinReadOnly?LOCK:'')):"Skincare";
     if(!r){body.innerHTML='<div class="sk-empty">Aucune routine.</div>';return;}

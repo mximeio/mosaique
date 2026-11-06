@@ -15,6 +15,12 @@
   function uid(){return "t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
   var FB={apiKey:"AIzaSyC5jQMCRydOVHWYiRhC1LAG_VJVOWzWv7Y",authDomain:"mosaique-652b4.firebaseapp.com",projectId:"mosaique-652b4",storageBucket:"mosaique-652b4.firebasestorage.app",messagingSenderId:"245540730613",appId:"1:245540730613:web:2230a37948f709d778f7bc"};
   var CLOUD=false,auth=null,db=null,fbUser=null,cloudTimer=null,SHARED="shared",lastJson=null,pendingRemote=null,unsub=null;
+  /* Securite (06/11/2026) : aucune ecriture vers Firestore tant que le document partage n'a pas
+     ete recu du serveur dans cette session. Sans ca, une copie locale ancienne (ou le voyage de
+     demonstration d'un appareil neuf) remplacait les voyages de tout le monde a la premiere
+     modification. Les modifications faites en attendant restent sur l'appareil (offlineDirty),
+     et l'utilisateur choisit de les envoyer ou non quand le serveur repond. */
+  var cloudReady=false,offlineDirty=false,cloudRetry=null,cloudFailed=false;
   try{if(typeof firebase!=="undefined"&&FB.apiKey){firebase.initializeApp(FB);auth=firebase.auth();db=firebase.firestore();CLOUD=true;}}catch(e){}
   var CHK='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>';
   var BUBBLE='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 9 9 0 0 1-4-1L3 20l1-4.5a8.5 8.5 0 1 1 16-4z"/></svg>';

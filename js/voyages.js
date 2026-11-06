@@ -15,9 +15,28 @@
   }
   function seedTrip(){var t=seed();t.id=uid();return t;}
   var DEFAULT_CATS=[{id:"cav",name:"Avion",color:"#0ea5e9"},{id:"clo",name:"Logement",color:"#4f46e5"},{id:"ctr",name:"Transport",color:"#f59e0b"},{id:"cac",name:"Activité",color:"#10b981"}];
+  /* Securite (06/11/2026) : la FORME des donnees se controle aussi, pas seulement les textes.
+     Un objet qui imite une liste ({length:1,"0":{…}}) sautait le controle des couleurs, puis
+     etait lu quand meme par catById : la couleur brute entrait dans un style="…". Toute liste
+     attendue qui n'en est pas une est donc remplacee, et ses elements filtres. */
+  function isObj(x){return !!x&&typeof x==="object"&&!Array.isArray(x);}
+  function isStr(x){return typeof x==="string";}
+  function listOf(v,keep){return Array.isArray(v)?v.filter(keep):[];}
+  function shapeTrip(t){
+    t.people=listOf(t.people,isStr);
+    t.periods=listOf(t.periods,isObj);t.periods.forEach(function(p){p.members=listOf(p.members,isStr);});
+    t.expenses=listOf(t.expenses,isObj);t.expenses.forEach(function(e){if(e.people!=null)e.people=listOf(e.people,isStr);if(e.periods!=null)e.periods=listOf(e.periods,isStr);});
+    if(t.emails!=null&&!isObj(t.emails))t.emails={};
+    if(t.colors!=null&&!isObj(t.colors))t.colors={};
+  }
   function migrate(s){
-    if(s&&!s.categories)s.categories=DEFAULT_CATS.map(function(c){return {id:c.id,name:c.name,color:c.color};});
-    if(s&&Array.isArray(s.categories))s.categories.forEach(function(c){if(c)c.color=safeCol(c.color,"#94a3b8");});
+    if(!isObj(s))return s;
+    s.trips=listOf(s.trips,isObj);s.trips.forEach(shapeTrip);
+    if(!s.trips.length){var st=seedTrip();s.trips=[st];s.activeId=st.id;}
+    if(s.categories!=null&&!Array.isArray(s.categories))s.categories=null;
+    if(!s.categories)s.categories=DEFAULT_CATS.map(function(c){return {id:c.id,name:c.name,color:c.color};});
+    s.categories=s.categories.filter(isObj);
+    s.categories.forEach(function(c){c.id=String(c.id);c.name=(c.name==null)?"":String(c.name);c.color=safeCol(c.color,"#94a3b8");});
     if(s&&s.trips)s.trips.forEach(function(t){if(!t.emails)t.emails={};if(t.periods)t.periods.sort(function(a,b){var x=a.start||"",y=b.start||"";return x<y?-1:x>y?1:0;});var pids=(t.periods||[]).map(function(p){return p.id;});(t.expenses||[]).forEach(function(e){
       if(e.scope==="individual"){e.scope="custom";e.people=e.person?[e.person]:[];delete e.person;}
       else if(e.scope==="all"){e.scope="sejour";e.periods=pids.slice();if(!e.basis)e.basis="nights";}
@@ -60,7 +79,7 @@
     if(t&&store.activeId!==t.id)store.activeId=t.id;
     return t;
   }
-  function save(){var j=JSON.stringify(store);try{localStorage.setItem(STORE_KEY,j);}catch(e){} if(CLOUD&&fbUser&&db){clearTimeout(cloudTimer);cloudTimer=setTimeout(function(){var jj=JSON.stringify(store);lastJson=jj;try{db.collection("budgets").doc(SHARED).set({json:jj});}catch(e){}},700);}}
+  function save(){var j=JSON.stringify(store);try{localStorage.setItem(STORE_KEY,j);}catch(e){} if(CLOUD&&fbUser&&db){if(!cloudReady){offlineDirty=true;return;}clearTimeout(cloudTimer);cloudTimer=setTimeout(function(){var jj=JSON.stringify(store);lastJson=jj;try{db.collection("budgets").doc(SHARED).set({json:jj});}catch(e){}},700);}}
   function renderTripSwitch(){
     var cur=activeTrip();
     var lbl=document.getElementById("trip-current");if(lbl)lbl.textContent=cur?(cur.tripName||"Sans titre"):"—";
@@ -84,7 +103,8 @@
   function latestTripId(){var ts=store.trips.filter(canSee);if(!ts.length)ts=store.trips;var best=null,bs="";ts.forEach(function(t){var s=tripStart(t)||"";if(best===null||s>bs){bs=s;best=t;}});return best?best.id:((store.trips[0]||{}).id);}
   function tripURL(t){return location.origin+location.pathname+"#voyages-"+tripSlug(t);}
   function syncHash(){if(routeLock)return;var h;if(curModule==="conges")h="#conges";else if(curModule==="skincare")h="#skincare";else{if(!state)return;h="#voyages-"+tripSlug(state);}if(location.hash!==h){routeLock=true;location.hash=h;setTimeout(function(){routeLock=false;},0);}}
-  function applyHash(){if(!store||!store.trips)return;var raw=decodeURIComponent((location.hash||"").replace(/^#/,"")),low=raw.toLowerCase();
+  /* Un lien mal encode (#voyages-%E0) faisait lever decodeURIComponent en plein demarrage. */
+  function applyHash(){if(!store||!store.trips)return;var h=(location.hash||"").replace(/^#/,""),raw;try{raw=decodeURIComponent(h);}catch(e){raw=h;}var low=raw.toLowerCase();
     if(low.indexOf("cong")===0){if(moduleAccess.conges)setModule("conges");return;}
     if(low.indexOf("skin")===0){if(moduleAccess.skincare)setModule("skincare");return;}
     if(low.indexOf("voyage")===0){setModule("voyages");var slug=raw.replace(/^voyages?-?/i,""),id=null;if(slug){var t=tripBySlug(slug);if(t)id=t.id;}if(!id)id=latestTripId();if(id&&id!==store.activeId){store.activeId=id;state=activeTrip();renderTripSwitch();renderAll();}return;}
@@ -99,7 +119,6 @@
 
   function defaultColor(name){var h=0;for(var i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0;return palette[h%palette.length];}
   function color(name){return safeCol(state.colors&&state.colors[name],null)||defaultColor(name);}
-  function avatar(name){return '<span class="av" data-colperson="'+esc(name)+'" title="Changer la couleur" style="background:'+color(name)+'">'+(name?name[0].toUpperCase():"?")+'</span>';}
   function nights(p){var d=Math.round((Date.parse(p.end)-Date.parse(p.start))/86400000);return d>0?d:0;}
   function days(p){var n=nights(p);if(n<=0)return 0;var base=n+1;for(var i=0;i<state.periods.length;i++){var q=state.periods[i];if(q!==p&&q.end===p.start){base-=1;break;}}return base;}
   var nf=new Intl.NumberFormat("fr-FR",{maximumFractionDigits:2});
@@ -116,8 +135,9 @@
        Sans DOMPurify (CDN indisponible), on affiche le texte seul, jamais du HTML non filtre. */
   function safeCol(v,fb){return (typeof v==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(v))?v:fb;}
   /* target garde l'ouverture des liens Quill dans un nouvel onglet ; <form> et <style> sont
-     refuses (envoi de saisie ailleurs, habillage de toute la page). */
-  var CLEAN_OPTS={FORBID_TAGS:["style","form"],ADD_ATTR:["target"]};
+     refuses (envoi de saisie ailleurs, habillage de toute la page) ; id et name aussi, sinon un
+     commentaire peut porter id="modal-body" et detourner le getElementById de la modale. */
+  var CLEAN_OPTS={FORBID_TAGS:["style","form"],FORBID_ATTR:["id","name"],ADD_ATTR:["target"]};
   function cleanHtml(h){h=(h==null)?"":String(h);if(typeof DOMPurify!=="undefined"&&DOMPurify.sanitize)return DOMPurify.sanitize(h,CLEAN_OPTS);return esc(h.replace(/<[^>]*>/g," "));}
   function basisLabel(b){return b==="days"?"jours":"nuits";}
   function expPeriods(e){if(e.scope==="all")return state.periods.slice();if(e.scope==="sejour"){var ids=e.periods||[];return state.periods.filter(function(p){return ids.indexOf(p.id)>=0;});}var p=period(e.scope);return p?[p]:[];}
@@ -234,7 +254,7 @@
     var hasC=!!(e.comment&&e.comment.replace(/<[^>]*>/g,"").trim());
     var lab=(e.label&&esc(e.label))||'<span class="exp-noname">Sans libellé</span>';
     var cat=e.category?catById(e.category):null;
-    var dot=cat?'<span class="exp-cdot" style="background:'+cat.color+'" title="'+esc(cat.name)+'"></span>':'';
+    var dot=cat?'<span class="exp-cdot" style="background:'+safeCol(cat.color,"#94a3b8")+'" title="'+esc(cat.name)+'"></span>':'';
     return '<div class="exp-item'+(e.reserved?" reserved":"")+'" data-id="'+esc(e.id)+'">'
       +'<div class="exp-row">'
       +'<span class="drag-handle" title="Glisser pour réordonner">⠿</span>'
@@ -263,7 +283,7 @@
       m.rows.forEach(function(r){var a=r.sh[n];if(a>0.004){tot+=a;if(r.e.paid)paid+=a;else reste+=a;var cid=r.e.category||"";byCat[cid]=(byCat[cid]||0)+a;}});
       var order=cats.map(function(c){return c.id;}).concat([""]);
       var lines=order.filter(function(cid){return byCat[cid]>0.004;}).map(function(cid){
-        var c=cid?catById(cid):null,cn=c?esc(c.name):"Sans catégorie",cc=c?c.color:"#94a3b8";
+        var c=cid?catById(cid):null,cn=c?esc(c.name):"Sans catégorie",cc=c?safeCol(c.color,"#94a3b8"):"#94a3b8";
         return '<div class="pline"><span class="pcat"><span class="pdot" style="background:'+cc+'"></span>'+cn+'</span><span>'+fmt(byCat[cid])+'</span></div>';
       }).join("")||'<div class="pline" style="border:none"><span class="meta">Aucune part</span></div>';
       var badges=state.periods.filter(function(p){return p.members.indexOf(n)>=0;}).map(function(p){return '<span class="ppbadge">'+esc(p.name)+'</span>';}).join("")||'<span class="ppbadge muted">aucun séjour</span>';
@@ -637,7 +657,7 @@
       +'<div class="acc-card"><span class="acc-av">'+esc(init)+'</span><span style="font-size:13px;color:var(--color-text)">'+esc(email)+'</span></div></div>'
       +'<div style="margin-bottom:16px"><div class="acc-sect">'+lock+'MOT DE PASSE</div>'
       +'<input id="acc-cur" class="acc-fld" type="password" placeholder="Mot de passe actuel" autocomplete="current-password"/>'
-      +'<input id="acc-new" class="acc-fld" type="password" placeholder="Nouveau mot de passe (6 caractères min.)" autocomplete="new-password"/>'
+      +'<input id="acc-new" class="acc-fld" type="password" placeholder="Nouveau mot de passe (12 caractères min.)" autocomplete="new-password"/>'
       +'<input id="acc-new2" class="acc-fld" type="password" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password"/>'
       +'<button type="button" id="acc-save" class="btn primary acc-save">Enregistrer le mot de passe</button>'
       +'<div class="acc-msg" id="acc-msg"></div></div>'
@@ -651,7 +671,7 @@
     msg.className="acc-msg";
     var cur=(document.getElementById("acc-cur").value||""),np=(document.getElementById("acc-new").value||""),np2=(document.getElementById("acc-new2").value||"");
     if(!cur||!np){msg.textContent="Renseigne ton mot de passe actuel et le nouveau.";msg.classList.add("err");return;}
-    if(np.length<6){msg.textContent="Le nouveau mot de passe doit faire au moins 6 caractères.";msg.classList.add("err");return;}
+    if(np.length<12){msg.textContent="Le nouveau mot de passe doit faire au moins 12 caractères.";msg.classList.add("err");return;}
     if(np!==np2){msg.textContent="Les deux nouveaux mots de passe ne correspondent pas.";msg.classList.add("err");return;}
     var u=auth&&auth.currentUser;if(!u){msg.textContent="Tu n'es pas connecté.";msg.classList.add("err");return;}
     if(!confirm("Confirmer le changement de mot de passe ?"))return;
@@ -761,7 +781,7 @@
     var peopleItems=state.people.map(function(n){var on=selPeople.indexOf(n)>=0;return '<div class="mem-item'+(on?" on":"")+'" data-mem="'+esc(n)+'"><span class="chk">'+(on?CHK:'')+'</span><span class="av" style="background:'+color(n)+'">'+esc(n[0].toUpperCase())+'</span>'+esc(n)+'</div>';}).join("");
     var body='<div class="fld-row"><label>Libellé</label><input id="m-exlabel" class="fld" type="text" placeholder="Libellé" value="'+(ex?esc(ex.label||""):"")+'"/></div>'
       +'<div class="fld-row"><label>Montant</label><input id="m-examount" class="fld" type="number" min="0" step="0.01" placeholder="€" value="'+(ex?esc(ex.amount):"")+'"/></div>'
-      +'<div class="fld-row"><label>Catégorie</label><div class="catpicks" id="m-excat">'+(store.categories||[]).map(function(c){var on=ex&&ex.category===c.id;return '<span class="catpick'+(on?" on":"")+'" data-catpick="'+esc(c.id)+'" style="--c:'+esc(c.color)+'">'+esc(c.name)+'</span>';}).join("")+'</div></div>'
+      +'<div class="fld-row"><label>Catégorie</label><div class="catpicks" id="m-excat">'+(store.categories||[]).map(function(c){var on=ex&&ex.category===c.id;return '<span class="catpick'+(on?" on":"")+'" data-catpick="'+esc(c.id)+'" style="--c:'+safeCol(c.color,"#94a3b8")+'">'+esc(c.name)+'</span>';}).join("")+'</div></div>'
       +'<div class="fld-row"><label>Répartition</label><div class="catpicks" id="m-exscope-pick"><span class="catpick scope'+(sc==="sejour"?" on":"")+'" data-scopepick="sejour">Séjour</span><span class="catpick scope'+(sc==="custom"?" on":"")+'" data-scopepick="custom">Personnes</span></div></div>'
       +'<div class="fld-row" id="m-experiods-row"><label>Périodes</label><div class="mem-list" id="m-experiods">'+periodsItems+'</div></div>'
       +'<div class="fld-row" id="m-exbasis-row"><label>Base de calcul</label><select id="m-exbasis" class="fld">'+optBasis(basis)+'</select></div>'
@@ -810,9 +830,9 @@
     save();renderExpenses();renderParts();closeModal();
   }
   function settingsCatsHtml(){return (store.categories||[]).map(function(c,i){
-    var sws=palette.map(function(h){return '<span class="csw'+(c.color.toLowerCase()===h.toLowerCase()?" active":"")+'" data-catsw="'+h+'" data-catid="'+esc(c.id)+'" style="background:'+h+'"></span>';}).join("");
-    sws+='<button type="button" class="csw cat-cust" data-catcustom="'+esc(c.id)+'" title="Couleur personnalisée"></button><input type="color" class="cat-custinput" value="'+esc(c.color)+'" data-catcolinput="'+esc(c.id)+'" tabindex="-1">';
-    return '<div class="cat-item" data-catdrag data-catid="'+esc(c.id)+'" data-idx="'+i+'"><div class="cat-top"><span class="cat-grip" title="Glisser pour réordonner">⠿</span><button type="button" class="cat-dot" data-cattoggle="'+esc(c.id)+'" style="background:'+esc(c.color)+'" title="Couleur"></button><input type="text" class="cat-name" data-catid="'+esc(c.id)+'" value="'+esc(c.name)+'"/><button class="row-action" data-catdel="'+esc(c.id)+'" title="Supprimer">×</button></div><div class="cat-sws" hidden>'+sws+'</div></div>';
+    var sws=palette.map(function(h){return '<span class="csw'+(String(c.color).toLowerCase()===h.toLowerCase()?" active":"")+'" data-catsw="'+h+'" data-catid="'+esc(c.id)+'" style="background:'+h+'"></span>';}).join("");
+    sws+='<button type="button" class="csw cat-cust" data-catcustom="'+esc(c.id)+'" title="Couleur personnalisée"></button><input type="color" class="cat-custinput" value="'+safeCol(c.color,"#94a3b8")+'" data-catcolinput="'+esc(c.id)+'" tabindex="-1">';
+    return '<div class="cat-item" data-catdrag data-catid="'+esc(c.id)+'" data-idx="'+i+'"><div class="cat-top"><span class="cat-grip" title="Glisser pour réordonner">⠿</span><button type="button" class="cat-dot" data-cattoggle="'+esc(c.id)+'" style="background:'+safeCol(c.color,"#94a3b8")+'" title="Couleur"></button><input type="text" class="cat-name" data-catid="'+esc(c.id)+'" value="'+esc(c.name)+'"/><button class="row-action" data-catdel="'+esc(c.id)+'" title="Supprimer">×</button></div><div class="cat-sws" hidden>'+sws+'</div></div>';
   }).join("");}
   function openSettingsModal(){
     modalCtx={type:"settings"};

@@ -2,9 +2,10 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<!-- Politique de securite du contenu : seuls les scripts du site et des deux CDN s'executent ;
+<!-- Politique de securite du contenu : seuls les scripts du site et des quatre bibliotheques nommees s'executent
+     (chemins exacts, version comprise : changer de version = changer la ligne ci-dessous) ;
      un script ou un gestionnaire onerror glisse dans les donnees est refuse par le navigateur. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com; frame-src https://mosaique-652b4.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'self'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.2/ https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.7/ https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.17/ https://www.gstatic.com/firebasejs/10.12.2/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.2/; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com; frame-src https://mosaique-652b4.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'self'"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Mosaïque</title>
 <meta name="application-name" content="Mosaïque"/>
